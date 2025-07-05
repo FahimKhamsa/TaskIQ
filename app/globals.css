@@ -1,0 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+  All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* TaskIQ Dark Theme */
+    --background: 220 6% 8%;
+    --foreground: 210 20% 92%;
+
+    --card: 220 6% 10%;
+    --card-foreground: 210 20% 92%;
+
+    --popover: 220 6% 10%;
+    --popover-foreground: 210 20% 92%;
+
+    --primary: 270 95% 75%;
+    --primary-foreground: 220 6% 8%;
+
+    --secondary: 220 6% 15%;
+    --secondary-foreground: 210 20% 92%;
+
+    --muted: 220 6% 12%;
+    --muted-foreground: 210 10% 55%;
+
+    --accent: 220 6% 15%;
+    --accent-foreground: 210 20% 92%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 20% 92%;
+
+    --border: 220 6% 18%;
+    --input: 220 6% 15%;
+    --ring: 270 95% 75%;
+
+    --radius: 0.75rem;
+
+    /* Custom TaskIQ tokens */
+    --navbar-bg: 220 6% 9%;
+    --sidebar-bg: 220 6% 10%;
+    --content-bg: 220 6% 8%;
+    --success: 142 76% 36%;
+    --warning: 43 96% 56%;
+    --info: 217 91% 60%;
+    
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(270 95% 75%), hsl(270 95% 65%));
+    --gradient-card: linear-gradient(145deg, hsl(220 6% 10%), hsl(220 6% 12%));
+    
+    /* Shadows */
+    --shadow-elegant: 0 4px 20px -4px hsl(220 6% 4% / 0.3);
+    --shadow-card: 0 2px 8px -2px hsl(220 6% 4% / 0.2);
+    
+    /* Animations */
+    --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .dark {
+    /* We use dark as default, but keeping this for consistency */
+    --background: 220 6% 8%;
+    --foreground: 210 20% 92%;
+    --card: 220 6% 10%;
+    --card-foreground: 210 20% 92%;
+    --popover: 220 6% 10%;
+    --popover-foreground: 210 20% 92%;
+    --primary: 270 95% 75%;
+    --primary-foreground: 220 6% 8%;
+    --secondary: 220 6% 15%;
+    --secondary-foreground: 210 20% 92%;
+    --muted: 220 6% 12%;
+    --muted-foreground: 210 10% 55%;
+    --accent: 220 6% 15%;
+    --accent-foreground: 210 20% 92%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 20% 92%;
+    --border: 220 6% 18%;
+    --input: 220 6% 15%;
+    --ring: 270 95% 75%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}

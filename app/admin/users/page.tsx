@@ -1,0 +1,299 @@
+'use client';
+
+import { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuLabel, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
+import { 
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { 
+  Search, 
+  Filter, 
+  MoreHorizontal,
+  UserPlus,
+  Download,
+  Eye,
+  Edit,
+  Ban,
+  Trash2
+} from 'lucide-react';
+
+export default function UserManagement() {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+
+  const users = [
+    {
+      id: 1,
+      name: "John Doe",
+      email: "john@example.com",
+      plan: "Professional",
+      status: "active",
+      credits: 3247,
+      totalCredits: 5000,
+      joined: "2024-01-15",
+      lastActive: "2025-01-20"
+    },
+    {
+      id: 2,
+      name: "Jane Smith",
+      email: "jane@example.com",
+      plan: "Starter",
+      status: "active",
+      credits: 750,
+      totalCredits: 1000,
+      joined: "2024-03-22",
+      lastActive: "2025-01-19"
+    },
+    {
+      id: 3,
+      name: "Bob Johnson",
+      email: "bob@example.com",
+      plan: "Enterprise",
+      status: "suspended",
+      credits: 0,
+      totalCredits: 0,
+      joined: "2023-11-08",
+      lastActive: "2025-01-10"
+    },
+    {
+      id: 4,
+      name: "Alice Brown",
+      email: "alice@example.com",
+      plan: "Professional",
+      status: "active",
+      credits: 4890,
+      totalCredits: 5000,
+      joined: "2024-02-14",
+      lastActive: "2025-01-20"
+    },
+    {
+      id: 5,
+      name: "Charlie Wilson",
+      email: "charlie@example.com",
+      plan: "Starter",
+      status: "inactive",
+      credits: 1000,
+      totalCredits: 1000,
+      joined: "2024-06-30",
+      lastActive: "2024-12-15"
+    }
+  ];
+
+  const getPlanColor = (plan: string) => {
+    switch (plan) {
+      case 'Starter': return 'border-blue-800 text-blue-400';
+      case 'Professional': return 'border-purple-800 text-purple-400';
+      case 'Enterprise': return 'border-orange-800 text-orange-400';
+      default: return 'border-gray-700 text-gray-400';
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': return 'border-green-800 text-green-400';
+      case 'inactive': return 'border-yellow-800 text-yellow-400';
+      case 'suspended': return 'border-red-800 text-red-400';
+      default: return 'border-gray-700 text-gray-400';
+    }
+  };
+
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = filterStatus === 'all' || user.status === filterStatus;
+    return matchesSearch && matchesStatus;
+  });
+
+  return (
+    <div className="p-6 space-y-8">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-white">User Management</h1>
+          <p className="text-gray-400 mt-1">Manage and monitor user accounts</p>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Button variant="outline" className="border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800">
+            <Download className="w-4 h-4 mr-2" />
+            Export
+          </Button>
+          <Button className="bg-white text-black hover:bg-gray-100">
+            <UserPlus className="w-4 h-4 mr-2" />
+            Add User
+          </Button>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="bg-[#0f0f0f] border-gray-800">
+          <CardContent className="p-4">
+            <div className="text-2xl font-semibold text-white">12,847</div>
+            <p className="text-sm text-gray-400">Total Users</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-[#0f0f0f] border-gray-800">
+          <CardContent className="p-4">
+            <div className="text-2xl font-semibold text-green-500">11,234</div>
+            <p className="text-sm text-gray-400">Active Users</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-[#0f0f0f] border-gray-800">
+          <CardContent className="p-4">
+            <div className="text-2xl font-semibold text-yellow-500">1,456</div>
+            <p className="text-sm text-gray-400">Inactive Users</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-[#0f0f0f] border-gray-800">
+          <CardContent className="p-4">
+            <div className="text-2xl font-semibold text-red-500">157</div>
+            <p className="text-sm text-gray-400">Suspended Users</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <Card className="bg-[#0f0f0f] border-gray-800">
+        <CardHeader>
+          <CardTitle className="text-white">User List</CardTitle>
+          <CardDescription className="text-gray-400">Search and filter users</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center space-x-4 mb-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+              <Input
+                placeholder="Search users..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-[#0f0f0f] border-gray-700 text-white"
+              />
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800">
+                  <Filter className="w-4 h-4 mr-2" />
+                  Filter Status
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="bg-[#0f0f0f] border-gray-700">
+                <DropdownMenuItem onClick={() => setFilterStatus('all')} className="text-gray-300 focus:text-white focus:bg-gray-800">
+                  All Users
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setFilterStatus('active')} className="text-gray-300 focus:text-white focus:bg-gray-800">
+                  Active
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setFilterStatus('inactive')} className="text-gray-300 focus:text-white focus:bg-gray-800">
+                  Inactive
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setFilterStatus('suspended')} className="text-gray-300 focus:text-white focus:bg-gray-800">
+                  Suspended
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          {/* Users Table */}
+          <Table>
+            <TableHeader>
+              <TableRow className="border-gray-800">
+                <TableHead className="text-gray-400">User</TableHead>
+                <TableHead className="text-gray-400">Plan</TableHead>
+                <TableHead className="text-gray-400">Status</TableHead>
+                <TableHead className="text-gray-400">Credits</TableHead>
+                <TableHead className="text-gray-400">Joined</TableHead>
+                <TableHead className="text-gray-400">Last Active</TableHead>
+                <TableHead className="text-right text-gray-400">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredUsers.map((user) => (
+                <TableRow key={user.id} className="border-gray-800">
+                  <TableCell>
+                    <div>
+                      <div className="font-medium text-white">{user.name}</div>
+                      <div className="text-sm text-gray-400">{user.email}</div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={getPlanColor(user.plan)}>
+                      {user.plan}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={getStatusColor(user.status)}>
+                      {user.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-sm">
+                      <div className="font-medium text-white">{user.credits.toLocaleString()}</div>
+                      <div className="text-gray-500">of {user.totalCredits.toLocaleString()}</div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-sm text-gray-400">
+                    {user.joined}
+                  </TableCell>
+                  <TableCell className="text-sm text-gray-400">
+                    {user.lastActive}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0 text-gray-400 hover:text-white">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="bg-[#0f0f0f] border-gray-700">
+                        <DropdownMenuLabel className="text-white">Actions</DropdownMenuLabel>
+                        <DropdownMenuItem className="text-gray-300 focus:text-white focus:bg-gray-800">
+                          <Eye className="mr-2 h-4 w-4" />
+                          View Details
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-gray-300 focus:text-white focus:bg-gray-800">
+                          <Edit className="mr-2 h-4 w-4" />
+                          Edit User
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator className="bg-gray-700" />
+                        <DropdownMenuItem className="text-gray-300 focus:text-white focus:bg-gray-800">
+                          <Ban className="mr-2 h-4 w-4" />
+                          Suspend User
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-red-400 focus:text-red-300 focus:bg-gray-800">
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete User
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+
+          {filteredUsers.length === 0 && (
+            <div className="text-center py-8">
+              <p className="text-gray-500">No users found matching your search criteria.</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
