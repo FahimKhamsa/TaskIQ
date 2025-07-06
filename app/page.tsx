@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -6,7 +8,20 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Bot, Zap, Shield, Smartphone, ArrowRight, Check } from "lucide-react";
+import {
+  Bot,
+  Zap,
+  Shield,
+  Smartphone,
+  ArrowRight,
+  Check,
+  Play,
+  Star,
+} from "lucide-react";
+import { useState } from "react";
+import Image from "next/image";
+import { createClient } from "@/lib/supabase/client";
+import { Logo } from "@/components/custom/logo";
 
 // Static data for the features section.
 const features = [
@@ -78,78 +93,168 @@ const pricing = [
 
 /**
  * The main landing page for the TaskIQ application.
- * This is a Server Component, rendered on the server for optimal performance.
+ * This is a Client Component with interactive features and animations.
  *
  * @returns {JSX.Element} The landing page component.
  */
 export default function LandingPage() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+
+  const supabase = createClient();
+
+  // Button click handlers
+  const handleSignIn = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${location.origin}/auth/callback`,
+      },
+    });
+  };
+
+  const handleGetStarted = () => {
+    // Redirect to Telegram bot (main product)
+    window.open("https://t.me/Task_IQ_bot", "_blank");
+  };
+
+  const handleViewDemo = () => {
+    // Open demo video or redirect to demo page
+    window.open("https://www.youtube.com/watch?v=dQw4w9WgXcQ", "_blank");
+  };
+
+  const handlePlanSelect = (planName: string) => {
+    setSelectedPlan(planName);
+    setIsLoading(true);
+    // Simulate plan selection
+    setTimeout(() => {
+      setIsLoading(false);
+      alert(`Selected ${planName} plan! Redirecting to checkout...`);
+    }, 1500);
+  };
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="border-b border-border">
+      <header className="border-b border-gray-200">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Bot className="h-8 w-8 text-primary" />
-              <span className="text-2xl font-bold text-foreground">TaskIQ</span>
-            </div>
-            <Button className="bg-gradient-primary">Sign in with Google</Button>
+            <Logo href="/" className="text-2xl" />
+            <Button
+              className="bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white hover:scale-105 transition-transform duration-200"
+              onClick={handleSignIn}
+            >
+              Sign in with Google
+            </Button>
           </div>
         </div>
       </header>
 
       {/* Hero Section */}
       <main>
-        <section className="py-20 sm:py-32">
-          <div className="container mx-auto px-4 text-center">
-            <div className="mx-auto max-w-4xl">
-              <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-6xl">
-                Your AI Assistant for{" "}
-                <span className="text-primary"> Google Services</span>
-              </h1>
-              <p className="mt-6 text-xl leading-8 text-muted-foreground">
-                Connect your Telegram bot to Gmail, Calendar, Fitness, and Maps.
-                Manage everything with simple commands powered by AI.
-              </p>
-              <div className="mt-10 flex items-center justify-center gap-x-6">
-                <Button size="lg" className="bg-gradient-primary">
-                  Get Started
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="lg">
-                  View Demo
-                </Button>
+        <section className="py-20 sm:py-32 relative overflow-hidden">
+          {/* Background decoration */}
+          <div className="absolute inset-0 -z-10">
+            <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse"></div>
+            <div
+              className="absolute bottom-0 right-1/4 w-64 h-64 bg-primary/5 rounded-full blur-2xl animate-pulse"
+              style={{ animationDelay: "1s" }}
+            ></div>
+          </div>
+
+          <div className="container mx-auto px-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              {/* Left side - Text and Buttons */}
+              <div className="animate-in slide-in-from-left-4 duration-1000">
+                <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
+                  Your AI Assistant for{" "}
+                  <span className="text-purple-600 bg-gradient-to-r from-purple-600 to-purple-500 bg-clip-text text-transparent">
+                    Google Services
+                  </span>
+                </h1>
+                <p
+                  className="mt-6 text-xl leading-8 text-gray-600 animate-in slide-in-from-left-4 duration-1000"
+                  style={{ animationDelay: "200ms" }}
+                >
+                  Connect your Telegram bot to Gmail, Calendar, Fitness, and
+                  Maps. Manage everything with simple commands powered by AI.
+                </p>
+
+                <div
+                  className="mt-10 flex items-center gap-x-6 animate-in slide-in-from-left-4 duration-1000"
+                  style={{ animationDelay: "400ms" }}
+                >
+                  <Button
+                    size="lg"
+                    className="bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white hover:scale-105 transition-all duration-300 group"
+                    onClick={handleGetStarted}
+                  >
+                    Get Started
+                    <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </Button>
+                  <Button
+                    size="lg"
+                    className="bg-[#0f0f0f] text-white hover:bg-[#1a1a1a] hover:scale-105 transition-all duration-300 group"
+                    onClick={handleViewDemo}
+                  >
+                    <Play className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform" />
+                    View Demo
+                  </Button>
+                </div>
+              </div>
+
+              {/* Right side - Hero Image */}
+              <div
+                className="animate-in slide-in-from-right-4 duration-1000"
+                style={{ animationDelay: "300ms" }}
+              >
+                <div className="relative w-full">
+                  <div className="aspect-video bg-gradient-to-br from-purple-100 to-purple-50 rounded-2xl border border-purple-200 flex items-center justify-center shadow-2xl">
+                    <div className="text-center">
+                      <Bot className="h-16 w-16 text-purple-600 mx-auto mb-4 animate-bounce" />
+                      <p className="text-lg font-semibold text-gray-900">
+                        TaskIQ Dashboard Preview
+                      </p>
+                      <p className="text-sm text-gray-600 mt-2">
+                        AI-powered Google Services Integration
+                      </p>
+                    </div>
+                  </div>
+                  {/* Floating elements */}
+                  <div className="absolute -top-4 -right-4 w-8 h-8 bg-purple-200 rounded-full animate-ping"></div>
+                  <div className="absolute -bottom-4 -left-4 w-6 h-6 bg-purple-300 rounded-full animate-pulse"></div>
+                </div>
               </div>
             </div>
           </div>
         </section>
 
         {/* Features Section */}
-        <section className="py-24 bg-card/20">
+        <section className="py-24 bg-gray-50">
           <div className="container mx-auto px-4">
             <div className="text-center">
-              <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+              <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
                 Everything you need
               </h2>
-              <p className="mt-4 text-lg text-muted-foreground">
+              <p className="mt-4 text-lg text-gray-600">
                 Powerful features designed to streamline your digital life
               </p>
             </div>
 
             <div className="mt-16 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-              {features.map((feature) => (
+              {features.map((feature, index) => (
                 <Card
                   key={feature.title}
-                  className="bg-gradient-card border-border shadow-card"
+                  className="bg-white border-gray-200 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer animate-in slide-in-from-bottom-4"
+                  style={{ animationDelay: `${index * 100}ms` }}
                 >
                   <CardHeader className="items-center text-center">
-                    <feature.icon className="h-12 w-12 text-primary" />
-                    <CardTitle className="text-foreground pt-4">
+                    <feature.icon className="h-12 w-12 text-purple-600 hover:rotate-12 transition-transform duration-300" />
+                    <CardTitle className="text-gray-900 pt-4">
                       {feature.title}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <CardDescription className="text-center text-muted-foreground">
+                    <CardDescription className="text-center text-gray-600">
                       {feature.description}
                     </CardDescription>
                   </CardContent>
@@ -160,67 +265,87 @@ export default function LandingPage() {
         </section>
 
         {/* Pricing Section */}
-        <section className="py-24">
+        <section id="pricing" className="py-24 bg-white">
           <div className="container mx-auto px-4">
             <div className="text-center">
-              <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+              <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
                 Simple, transparent pricing
               </h2>
-              <p className="mt-4 text-lg text-muted-foreground">
+              <p className="mt-4 text-lg text-gray-600">
                 Choose the plan that works best for you
               </p>
             </div>
 
-            <div className="mt-16 grid grid-cols-1 gap-8 lg:grid-cols-3">
-              {pricing.map((plan) => (
+            <div className="mt-16 grid grid-cols-1 gap-8 lg:grid-cols-3 lg:items-stretch">
+              {pricing.map((plan, index) => (
                 <Card
                   key={plan.name}
-                  className={`bg-gradient-card border-border shadow-card relative flex flex-col ${
-                    plan.popular ? "border-primary" : ""
+                  className={`bg-white border-gray-200 shadow-lg relative flex flex-col h-full hover:shadow-xl hover:scale-105 transition-all duration-300 animate-in slide-in-from-bottom-4 ${
+                    plan.popular
+                      ? "border-purple-500 ring-2 ring-purple-200"
+                      : ""
+                  } ${
+                    selectedPlan === plan.name ? "ring-2 ring-green-200" : ""
                   }`}
+                  style={{ animationDelay: `${index * 150}ms` }}
                 >
                   {plan.popular && (
-                    <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                      <span className="bg-gradient-primary px-4 py-1 text-sm font-medium text-primary-foreground rounded-full">
+                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 animate-bounce">
+                      <span className="bg-gradient-to-r from-purple-600 to-purple-500 px-4 py-1 text-sm font-medium text-white rounded-full flex items-center gap-1">
+                        <Star className="h-3 w-3" />
                         Most Popular
                       </span>
                     </div>
                   )}
                   <CardHeader className="text-center">
-                    <CardTitle className="text-2xl text-foreground">
+                    <CardTitle className="text-2xl text-gray-900">
                       {plan.name}
                     </CardTitle>
                     <div className="mt-4">
-                      <span className="text-4xl font-bold text-foreground">
+                      <span className="text-4xl font-bold text-gray-900">
                         {plan.price}
                       </span>
-                      <span className="text-muted-foreground">/month</span>
+                      <span className="text-gray-600">/month</span>
                     </div>
-                    <CardDescription className="text-muted-foreground pt-2">
+                    <CardDescription className="text-gray-600 pt-2">
                       {plan.description}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="flex flex-1 flex-col">
-                    <ul className="space-y-3">
-                      {plan.features.map((feature) => (
+                  <CardContent className="flex flex-1 flex-col justify-between">
+                    <ul className="space-y-3 flex-1">
+                      {plan.features.map((feature, featureIndex) => (
                         <li
                           key={feature}
-                          className="flex items-center space-x-3"
+                          className="flex items-center space-x-3 animate-in slide-in-from-left-2"
+                          style={{
+                            animationDelay: `${
+                              index * 150 + featureIndex * 50
+                            }ms`,
+                          }}
                         >
-                          <Check className="h-4 w-4 flex-shrink-0 text-success" />
-                          <span className="text-muted-foreground">
-                            {feature}
-                          </span>
+                          <Check className="h-4 w-4 flex-shrink-0 text-green-600" />
+                          <span className="text-gray-600">{feature}</span>
                         </li>
                       ))}
                     </ul>
                     <Button
-                      className={`w-full mt-8 ${
-                        plan.popular ? "bg-gradient-primary" : ""
+                      className={`w-full mt-8 hover:scale-105 transition-all duration-300 ${
+                        plan.popular
+                          ? "bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white"
+                          : "bg-[#0f0f0f] text-white hover:bg-[#1a1a1a]"
+                      } ${
+                        selectedPlan === plan.name
+                          ? "bg-green-600 text-white"
+                          : ""
                       }`}
-                      variant={plan.popular ? "default" : "outline"}
+                      onClick={() => handlePlanSelect(plan.name)}
+                      disabled={isLoading && selectedPlan === plan.name}
                     >
-                      Get Started
+                      {isLoading && selectedPlan === plan.name
+                        ? "Processing..."
+                        : selectedPlan === plan.name
+                        ? "Selected ✓"
+                        : "Get Started"}
                     </Button>
                   </CardContent>
                 </Card>
@@ -231,14 +356,13 @@ export default function LandingPage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border bg-card/20">
+      <footer className="border-t border-gray-200 bg-gray-50">
         <div className="container mx-auto px-4 py-12">
           <div className="text-center">
-            <div className="flex items-center justify-center space-x-2 mb-4">
-              <Bot className="h-8 w-8 text-primary" />
-              <span className="text-2xl font-bold text-foreground">TaskIQ</span>
+            <div className="flex justify-center mb-4">
+              <Logo href="/" className="text-2xl" />
             </div>
-            <p className="text-muted-foreground">
+            <p className="text-gray-600">
               Streamline your digital life with AI-powered assistance
             </p>
           </div>
