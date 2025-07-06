@@ -25,7 +25,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useTheme } from "./_components/theme-provider";
+import { useTheme } from "../../../providers/theme-provider";
 import { ThemePreview } from "./_components/theme-preview";
 import { toast } from "@/hooks/use-toast";
 

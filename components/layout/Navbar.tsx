@@ -21,6 +21,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSupabase } from "@/providers/auth-provider";
 
 // Configuration for the dropdown menu items.
 const dropdownItems = [
@@ -31,12 +32,25 @@ const dropdownItems = [
 
 /**
  * The main navigation bar for the application.
- * This is a Client Component because it uses the `usePathname` hook to determine the active link.
+ * This is a Client Component because it uses hooks to get the current path and user session.
  *
  * @returns {JSX.Element} The Navbar component.
  */
 export function Navbar() {
   const pathname = usePathname();
+  const { session, supabase } = useSupabase();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.reload();
+  };
+
+  const user = session?.user;
+  const userInitials =
+    user?.user_metadata?.name
+      ?.split(" ")
+      .map((n: string) => n[0])
+      .join("") || "U";
 
   return (
     <nav className="bg-navbar border-b border-border">
@@ -44,13 +58,13 @@ export function Navbar() {
         <div className="flex h-16 justify-between items-center">
           {/* Logo */}
           <div className="flex items-center">
-            <Logo href="/" />
+            <Logo href="/dashboard" />
           </div>
 
           {/* Right Side Navigation */}
           <div className="flex items-center space-x-4">
             {/* Dashboard Link */}
-            <Link href="/dashboard">
+            <Link href="/dashboard" passHref>
               <Button
                 variant={
                   pathname.startsWith("/dashboard") ? "secondary" : "ghost"
@@ -75,9 +89,12 @@ export function Navbar() {
                   className="relative h-8 w-8 rounded-full"
                 >
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src="/api/placeholder/32/32" alt="User" />
+                    <AvatarImage
+                      src={user?.user_metadata?.avatar_url}
+                      alt={user?.user_metadata?.name || "User Avatar"}
+                    />
                     <AvatarFallback className="bg-primary text-primary-foreground">
-                      FR
+                      {userInitials}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
@@ -85,9 +102,11 @@ export function Navbar() {
               <DropdownMenuContent className="w-56" align="end">
                 <DropdownMenuLabel>
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium">Fahim Rahman</p>
+                    <p className="text-sm font-medium">
+                      {user?.user_metadata?.name || "User"}
+                    </p>
                     <p className="text-xs text-muted-foreground">
-                      fahimrahman39281@gmail.com
+                      {user?.email}
                     </p>
                   </div>
                 </DropdownMenuLabel>
@@ -103,10 +122,7 @@ export function Navbar() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="text-destructive focus:text-destructive"
-                  onClick={() => {
-                    // Handle logout logic here
-                    console.log("Logout clicked");
-                  }}
+                  onClick={handleLogout}
                 >
                   <LogOut className="mr-2 h-4 w-4" />
                   Log out
