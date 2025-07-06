@@ -231,7 +231,7 @@ export default function SettingsPage() {
                         </Label>
                         <div className="mt-1 flex">
                           <span className="inline-flex items-center rounded-l-md border border-r-0 border-input bg-muted px-3 text-sm text-muted-foreground">
-                            cal.com/
+                            taskiq.com/
                           </span>
                           <Input
                             id="username"

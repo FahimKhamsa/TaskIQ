@@ -22,6 +22,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { Logo } from "@/components/custom/logo";
+import { LavaLamp } from "@/components/three/fluid-blob";
 
 // Static data for the features section.
 const features = [
@@ -133,12 +134,15 @@ export default function LandingPage() {
     }, 1500);
   };
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-transparent lr:px-0 sm:px-10">
+      {/* Lava Lamp Background */}
+      <LavaLamp />
+
       {/* Header */}
-      <header className="border-b border-gray-200">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <Logo href="/" className="text-2xl" />
+      <header>
+        <div className="container mx-auto py-4">
+          <div className="flex items-center md:px-20 justify-between tracking-tight mix-blend-exclusion">
+            <Logo href="/" className="text-2xl text-black" />
             <Button
               className="bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white hover:scale-105 transition-transform duration-200"
               onClick={handleSignIn}
@@ -153,7 +157,7 @@ export default function LandingPage() {
       <main>
         <section className="py-20 sm:py-32 relative overflow-hidden">
           {/* Background decoration */}
-          <div className="absolute inset-0 -z-10">
+          <div className="absolute inset-0 -z-10 opacity-50">
             <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse"></div>
             <div
               className="absolute bottom-0 right-1/4 w-64 h-64 bg-primary/5 rounded-full blur-2xl animate-pulse"
@@ -165,14 +169,14 @@ export default function LandingPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
               {/* Left side - Text and Buttons */}
               <div className="animate-in slide-in-from-left-4 duration-1000">
-                <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
+                <h1 className="text-4xl sm:text-6xl font-bold tracking-tight mix-blend-exclusion text-white">
                   Your AI Assistant for{" "}
                   <span className="text-purple-600 bg-gradient-to-r from-purple-600 to-purple-500 bg-clip-text text-transparent">
                     Google Services
                   </span>
                 </h1>
                 <p
-                  className="mt-6 text-xl leading-8 text-gray-600 animate-in slide-in-from-left-4 duration-1000"
+                  className="mt-6 text-xl leading-8 text-gray-400 animate-in slide-in-from-left-4 duration-1000  tracking-tight mix-blend-exclusion"
                   style={{ animationDelay: "200ms" }}
                 >
                   Connect your Telegram bot to Gmail, Calendar, Fitness, and
@@ -180,7 +184,7 @@ export default function LandingPage() {
                 </p>
 
                 <div
-                  className="mt-10 flex items-center gap-x-6 animate-in slide-in-from-left-4 duration-1000"
+                  className="mt-10 flex items-center gap-x-6 animate-in slide-in-from-left-4 duration-1000 tracking-tight mix-blend-exclusion"
                   style={{ animationDelay: "400ms" }}
                 >
                   <Button
@@ -193,7 +197,7 @@ export default function LandingPage() {
                   </Button>
                   <Button
                     size="lg"
-                    className="bg-[#0f0f0f] text-white hover:bg-[#1a1a1a] hover:scale-105 transition-all duration-300 group"
+                    className="bg-gray-700 text-white hover:bg-gray-800 hover:scale-105 transition-all duration-300 group"
                     onClick={handleViewDemo}
                   >
                     <Play className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform" />
@@ -356,11 +360,11 @@ export default function LandingPage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-gray-200 bg-gray-50">
+      <footer className="border-t border-gray-200 bg-white">
         <div className="container mx-auto px-4 py-12">
           <div className="text-center">
-            <div className="flex justify-center mb-4">
-              <Logo href="/" className="text-2xl" />
+            <div className="flex justify-center mb-4 tracking-tight mix-blend-exclusion">
+              <Logo href="/" className="text-2xl text-black" />
             </div>
             <p className="text-gray-600">
               Streamline your digital life with AI-powered assistance

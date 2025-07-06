@@ -3,6 +3,7 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  transpilePackages: ['three'],
 };
 
-module.exports = nextConfig;
+export default nextConfig;
