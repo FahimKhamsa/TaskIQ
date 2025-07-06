@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
+import { ThemeProvider } from "@/app/(user)/settings/_components/theme-provider";
 
 /**
  * Providers component wraps all the client-side context providers
@@ -22,11 +23,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        {children}
-      </TooltipProvider>
+      <ThemeProvider defaultTheme="dark" storageKey="taskiq-ui-theme">
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          {children}
+        </TooltipProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

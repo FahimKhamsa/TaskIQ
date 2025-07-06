@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -25,6 +25,9 @@ import {
   Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTheme } from "./_components/theme-provider";
+import { ThemePreview } from "./_components/theme-preview";
+import { toast } from "@/hooks/use-toast";
 
 // Configuration for the settings navigation tabs.
 const settingsTabs = [
@@ -62,7 +65,10 @@ const themeOptions = [
  */
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("profile");
-  const [selectedTheme, setSelectedTheme] = useState("dark");
+  const { theme, setTheme } = useTheme();
+  const [selectedTheme, setSelectedTheme] = useState<
+    "dark" | "light" | "system"
+  >(theme);
 
   const [profileData, setProfileData] = useState({
     name: "Fahim Rahman",
@@ -81,6 +87,37 @@ export default function SettingsPage() {
   const handleInputChange = (field: string, value: string) => {
     setProfileData((prev) => ({ ...prev, [field]: value }));
   };
+
+  /**
+   * Handles theme selection (doesn't apply immediately)
+   * @param {Theme} newTheme - The theme to select
+   */
+  const handleThemeSelection = (newTheme: "dark" | "light" | "system") => {
+    setSelectedTheme(newTheme);
+  };
+
+  /**
+   * Applies the selected theme and shows toast notification
+   */
+  const handleThemeUpdate = () => {
+    setTheme(selectedTheme);
+    toast({
+      title: "Theme updated",
+      description: `Switched to ${
+        selectedTheme === "system" ? "system default" : selectedTheme
+      } theme.`,
+    });
+  };
+
+  // Check if theme has changed from current
+  const hasThemeChanged = selectedTheme !== theme;
+
+  // Reset selectedTheme to current theme when leaving appearance tab without saving
+  useEffect(() => {
+    if (activeTab !== "appearance" && hasThemeChanged) {
+      setSelectedTheme(theme);
+    }
+  }, [activeTab, theme, hasThemeChanged]);
 
   return (
     <div className="min-h-screen">
@@ -292,55 +329,62 @@ export default function SettingsPage() {
                     Appearance
                   </h2>
                   <p className="text-sm text-muted-foreground">
-                    Customize the appearance of your dashboard
+                    Manage settings for your booking appearance
                   </p>
                 </div>
 
                 <Card className="bg-gradient-card border-border shadow-card">
                   <CardHeader>
                     <CardTitle className="text-foreground">
-                      Dashboard Theme
+                      Dashboard theme
                     </CardTitle>
                     <CardDescription className="text-muted-foreground">
-                      Choose how TaskIQ looks to you
+                      This only applies to your logged in dashboard
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="space-y-6">
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                      {themeOptions.map((theme) => (
-                        <div
-                          key={theme.id}
-                          className={cn(
-                            "relative cursor-pointer rounded-lg border-2 p-4 transition-colors",
-                            selectedTheme === theme.id
-                              ? "border-primary bg-primary/5"
-                              : "border-border hover:border-primary/20"
-                          )}
-                          onClick={() => setSelectedTheme(theme.id)}
-                        >
-                          <div className="flex items-center space-x-3">
-                            <theme.icon className="h-5 w-5 text-muted-foreground" />
-                            <div>
-                              <p className="font-medium text-foreground">
-                                {theme.name}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                {theme.description}
-                              </p>
-                            </div>
-                          </div>
-                          {selectedTheme === theme.id && (
-                            <div className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary"></div>
-                          )}
-                        </div>
-                      ))}
+                      <div className="text-center">
+                        <ThemePreview
+                          theme="system"
+                          isSelected={selectedTheme === "system"}
+                          onClick={() => handleThemeSelection("system")}
+                        />
+                        <p className="mt-2 text-sm font-medium text-foreground">
+                          System default
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <ThemePreview
+                          theme="light"
+                          isSelected={selectedTheme === "light"}
+                          onClick={() => handleThemeSelection("light")}
+                        />
+                        <p className="mt-2 text-sm font-medium text-foreground">
+                          Light
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <ThemePreview
+                          theme="dark"
+                          isSelected={selectedTheme === "dark"}
+                          onClick={() => handleThemeSelection("dark")}
+                        />
+                        <p className="mt-2 text-sm font-medium text-foreground">
+                          Dark
+                        </p>
+                      </div>
                     </div>
 
-                    <Separator className="my-6" />
+                    <Separator />
 
                     <div className="flex justify-end">
-                      <Button className="bg-gradient-primary">
-                        Update Theme
+                      <Button
+                        className="bg-gradient-primary"
+                        disabled={!hasThemeChanged}
+                        onClick={handleThemeUpdate}
+                      >
+                        Update
                       </Button>
                     </div>
                   </CardContent>
