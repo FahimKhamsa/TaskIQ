@@ -5,6 +5,13 @@ import type {
   AdminStatsResponse,
   SystemHealthResponse,
   AdminAnalytics,
+  AdminAnalyticsResponse,
+  AdminAnalyticsListResponse,
+  GenerateAnalyticsRequest,
+  AdminUsersResponse,
+  AdminLogsResponse,
+  CreateLogRequest,
+  UpdateLogRequest,
   Announcement,
   CreateAnnouncementRequest,
 } from "@/lib/api/types";
@@ -33,15 +40,205 @@ export const useSystemHealth = () => {
 };
 
 /**
- * Hook to fetch detailed admin analytics
+ * Hook to fetch detailed admin analytics (latest or by ID)
  */
-export const useAdminAnalytics = () => {
+export const useAdminAnalytics = (id?: string, options?: {
+  useStored?: boolean;
+  maxAge?: number;
+  period?: string;
+  calculate?: boolean;
+}) => {
+  const params = new URLSearchParams();
+  
+  if (id) params.set('id', id);
+  if (options?.useStored) params.set('useStored', 'true');
+  if (options?.maxAge) params.set('maxAge', options.maxAge.toString());
+  if (options?.period) params.set('period', options.period);
+  if (options?.calculate) params.set('calculate', 'true');
+
   return useQuery({
-    queryKey: ["admin-analytics"],
-    queryFn: () => apiCall<{ analytics: AdminAnalytics }>("/admin/analytics"),
+    queryKey: ["admin-analytics", id, options],
+    queryFn: () => apiCall<AdminAnalyticsResponse>(`/admin/analytics?${params.toString()}`),
     select: (data) => data.analytics,
     staleTime: 1000 * 60 * 10, // 10 minutes
   });
+};
+
+/**
+ * Hook to fetch all admin analytics records
+ */
+export const useAdminAnalyticsList = () => {
+  return useQuery({
+    queryKey: ["admin-analytics-list"],
+    queryFn: () => apiCall<AdminAnalyticsListResponse>("/admin/analytics/list"),
+    staleTime: 1000 * 60 * 15, // 15 minutes
+  });
+};
+
+/**
+ * Hook to create/generate new admin analytics
+ */
+export const useGenerateAdminAnalytics = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (request: GenerateAnalyticsRequest = {}) =>
+      apiCall<AdminAnalyticsResponse>("/admin/analytics", {
+        method: "POST",
+        body: JSON.stringify(request),
+      }),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-analytics"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-analytics-list"] });
+      toast({
+        title: "Analytics generated successfully",
+        description: "New admin analytics snapshot has been created.",
+      });
+      return data.analytics;
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error generating analytics",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+/**
+ * Hook to update admin analytics
+ */
+export const useUpdateAdminAnalytics = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ id, ...updateData }: { id: string } & Partial<AdminAnalytics>) =>
+      apiCall<AdminAnalyticsResponse>("/admin/analytics", {
+        method: "PUT",
+        body: JSON.stringify({ id, ...updateData }),
+      }),
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-analytics"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-analytics-list"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-analytics", variables.id] });
+      toast({
+        title: "Analytics updated successfully",
+        description: "Admin analytics record has been updated.",
+      });
+      return data.analytics;
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error updating analytics",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+/**
+ * Hook to delete admin analytics
+ */
+export const useDeleteAdminAnalytics = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiCall(`/admin/analytics?id=${id}`, {
+        method: "DELETE",
+      }),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-analytics"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-analytics-list"] });
+      queryClient.removeQueries({ queryKey: ["admin-analytics", id] });
+      toast({
+        title: "Analytics deleted successfully",
+        description: "Admin analytics record has been permanently deleted.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error deleting analytics",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+/**
+ * Hook to get formatted analytics data for dashboard display
+ */
+export const useFormattedAdminAnalytics = () => {
+  const { data: analytics } = useAdminAnalytics();
+
+  if (!analytics) return null;
+
+  return {
+    overview: {
+      totalUsers: {
+        value: analytics.totalUsers?.toLocaleString() || '0',
+        label: 'Total Users',
+        icon: '👥',
+      },
+      conversionRate: {
+        value: `${((analytics.conversionRate || 0) * 100).toFixed(2)}%`,
+        label: 'Conversion Rate',
+        icon: '📈',
+      },
+      activeIntegrations: {
+        value: analytics.activeIntegrations?.length.toString() || '0',
+        label: 'Active Integrations',
+        icon: '🔗',
+      },
+      topCommands: {
+        value: analytics.mostUsedCommands?.length.toString() || '0',
+        label: 'Commands Tracked',
+        icon: '⚡',
+      },
+    },
+    topUsers: analytics.topUsers || [],
+    recentUsers: analytics.recentlyAddedUsers || [],
+    integrations: analytics.activeIntegrations || [],
+    commands: analytics.mostUsedCommands || [],
+    lastUpdated: analytics.createdAt,
+  };
+};
+
+/**
+ * Utility hook to check if analytics data is stale
+ */
+export const useAnalyticsStatus = () => {
+  const { data: analytics } = useAdminAnalytics();
+
+  if (!analytics?.createdAt) {
+    return {
+      isStale: true,
+      age: 0,
+      status: 'no-data',
+      message: 'No analytics data available',
+    };
+  }
+
+  const now = new Date();
+  const createdAt = new Date(analytics.createdAt);
+  const ageInHours = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+
+  return {
+    isStale: ageInHours > 24,
+    age: Math.round(ageInHours * 10) / 10,
+    status: ageInHours > 24 ? 'stale' : ageInHours > 12 ? 'aging' : 'fresh',
+    message: ageInHours > 24 
+      ? `Data is ${Math.round(ageInHours)} hours old`
+      : ageInHours > 12 
+      ? `Data is ${Math.round(ageInHours)} hours old`
+      : 'Data is up to date',
+  };
 };
 
 /**
@@ -156,13 +353,124 @@ export const useDeleteAnnouncement = () => {
 };
 
 /**
- * Hook to fetch admin logs
+ * Hook to fetch admin logs with filtering
  */
-export const useAdminLogs = (page: number = 1, limit: number = 50) => {
+export const useAdminLogs = (
+  page: number = 1, 
+  limit: number = 50,
+  filters?: {
+    type?: string;
+    userId?: string;
+    search?: string;
+    startDate?: string;
+    endDate?: string;
+  }
+) => {
+  const params = new URLSearchParams();
+  params.set('page', page.toString());
+  params.set('limit', limit.toString());
+  
+  if (filters?.type) params.set('type', filters.type);
+  if (filters?.userId) params.set('userId', filters.userId);
+  if (filters?.search) params.set('search', filters.search);
+  if (filters?.startDate) params.set('startDate', filters.startDate);
+  if (filters?.endDate) params.set('endDate', filters.endDate);
+
   return useQuery({
-    queryKey: ["admin-logs", page, limit],
-    queryFn: () => apiCall(`/admin/logs?page=${page}&limit=${limit}`),
+    queryKey: ["admin-logs", page, limit, filters],
+    queryFn: () => apiCall<AdminLogsResponse>(`/admin/logs?${params.toString()}`),
     staleTime: 1000 * 60 * 2, // 2 minutes
+  });
+};
+
+/**
+ * Hook to create a new log entry (admin only)
+ */
+export const useCreateLog = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (logData: CreateLogRequest) =>
+      apiCall<{ log: any }>("/admin/logs", {
+        method: "POST",
+        body: JSON.stringify(logData),
+      }),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-logs"] });
+      toast({
+        title: "Log created successfully",
+        description: "New log entry has been added.",
+      });
+      return data.log;
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error creating log",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+/**
+ * Hook to update a log entry (admin only)
+ */
+export const useUpdateLog = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (logData: UpdateLogRequest) =>
+      apiCall<{ log: any }>("/admin/logs", {
+        method: "PUT",
+        body: JSON.stringify(logData),
+      }),
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-logs"] });
+      toast({
+        title: "Log updated successfully",
+        description: "Log entry has been updated.",
+      });
+      return data.log;
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error updating log",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+/**
+ * Hook to delete a log entry (admin only)
+ */
+export const useDeleteLog = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (logId: string) =>
+      apiCall(`/admin/logs?id=${logId}`, {
+        method: "DELETE",
+      }),
+    onSuccess: (_, logId) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-logs"] });
+      toast({
+        title: "Log deleted successfully",
+        description: "Log entry has been permanently deleted.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error deleting log",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 };
 
@@ -172,7 +480,7 @@ export const useAdminLogs = (page: number = 1, limit: number = 50) => {
 export const useAdminUsers = (page: number = 1, limit: number = 20) => {
   return useQuery({
     queryKey: ["admin-users", page, limit],
-    queryFn: () => apiCall(`/admin/users?page=${page}&limit=${limit}`),
+    queryFn: () => apiCall<AdminUsersResponse>(`/admin/users?page=${page}&limit=${limit}`),
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 };

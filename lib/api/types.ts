@@ -88,15 +88,31 @@ export interface UserAnalytics {
   activeIntegrations: string[];
 }
 
+// Top user data structure
+export interface TopUserData {
+  user: string;
+  prompts: number;
+  credits_used: number;
+  joined_at: string;
+}
+
+// Recently added user data structure
+export interface RecentlyAddedUserData {
+  name: string;
+  email: string;
+  joined_at: string;
+  plan: PlanType;
+}
+
 export interface AdminAnalytics {
   id: string;
   createdAt: Date | null;
   totalUsers: number | null;
-  topUsers: any[];
+  topUsers: TopUserData[];
   activeIntegrations: string[];
   conversionRate: number | null;
   mostUsedCommands: string[];
-  recentlyAddedUsers: any[];
+  recentlyAddedUsers: RecentlyAddedUserData[];
 }
 
 export interface Offer {
@@ -214,6 +230,88 @@ export interface UpgradeSubscriptionResponse {
   subscription?: Subscription;
   redirectUrl?: string;
   message?: string;
+}
+
+// Admin Analytics API Response types
+export interface AdminAnalyticsResponse {
+  analytics: AdminAnalytics;
+}
+
+export interface AdminAnalyticsListResponse {
+  analytics: AdminAnalytics[];
+  total: number;
+}
+
+export interface GenerateAnalyticsRequest {
+  forceRefresh?: boolean;
+}
+
+// Admin Users API Response types
+export interface AdminUsersResponse {
+  users: UserWithRelations[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+  stats: {
+    totalUsers: number;
+    activeUsers: number;
+    inactiveUsers: number;
+    suspendedUsers: number;
+    planDistribution: {
+      free: number;
+      pro: number;
+      enterprise: number;
+    };
+    recentUsers: any[];
+    totalSpent: number;
+    totalPrompts: number;
+  };
+}
+
+// Admin Logs API Response types
+export interface LogWithUser extends Log {
+  user?: {
+    id: string;
+    email: string | null;
+    fullName: string | null;
+  } | null;
+  displayType: string;
+  userDisplay: string;
+  formattedTime: string;
+  isPremiumAction: boolean;
+}
+
+export interface AdminLogsResponse {
+  logs: LogWithUser[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+  stats: {
+    overall: Record<string, number>;
+    filtered: Record<string, number>;
+    total: number;
+    filteredTotal: number;
+  };
+}
+
+export interface CreateLogRequest {
+  userId?: string;
+  type: LogType;
+  content: string;
+  isPremium?: boolean;
+}
+
+export interface UpdateLogRequest {
+  id: string;
+  type?: LogType;
+  content?: string;
+  isPremium?: boolean;
 }
 
 // Request types

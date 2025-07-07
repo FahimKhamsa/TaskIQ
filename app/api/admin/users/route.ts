@@ -40,8 +40,8 @@ export async function GET(request: NextRequest) {
     }
 
     if (planFilter) {
-      whereClause.subscription = {
-        plan: planFilter,
+      whereClause.userAnalytics = {
+        planType: planFilter,
       };
     }
 
@@ -66,11 +66,26 @@ export async function GET(request: NextRequest) {
       prisma.user.count({ where: whereClause }),
     ]);
 
+    // Transform users data to include analytics information
+    const transformedUsers = users.map(user => ({
+      ...user,
+      // Calculate status based on last activity and analytics
+      status: calculateUserStatus(user),
+      // Get plan from userAnalytics if available, fallback to subscription
+      planType: user.userAnalytics?.planType || user.subscription?.plan || 'FREE',
+      // Get analytics data
+      totalPrompts: user.userAnalytics?.totalPromptPerDay || 0,
+      totalSpent: user.userAnalytics?.totalSpent || 0,
+      activeIntegrations: user.userAnalytics?.activeIntegrations || [],
+      // Calculate remaining credits
+      remainingCredits: (user.credit?.dailyLimit || 0) - (user.credit?.usedToday || 0),
+    }));
+
     // Get summary statistics
     const stats = await getUserStats();
 
     return NextResponse.json({
-      users,
+      users: transformedUsers,
       pagination: {
         page,
         limit,
@@ -86,6 +101,24 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// Helper function to calculate user status
+function calculateUserStatus(user: any) {
+  if (!user.userAnalytics) return 'inactive';
+  
+  const now = new Date();
+  const lastActivity = user.updatedAt ? new Date(user.updatedAt) : null;
+  
+  if (!lastActivity) return 'inactive';
+  
+  const daysSinceActivity = Math.floor((now.getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24));
+  
+  // Consider user active if they've been active in the last 7 days
+  if (daysSinceActivity <= 7) return 'active';
+  if (daysSinceActivity <= 30) return 'inactive';
+  
+  return 'suspended';
 }
 
 export async function POST(request: NextRequest) {
@@ -211,37 +244,95 @@ export async function POST(request: NextRequest) {
 async function getUserStats() {
   const [
     totalUsers,
-    activeSubscriptions,
+    activeUsers,
+    inactiveUsers,
+    suspendedUsers,
     freeUsers,
     proUsers,
     enterpriseUsers,
     recentUsers,
+    totalSpent,
+    totalPrompts,
   ] = await Promise.all([
+    // Total users
     prisma.user.count(),
-    prisma.subscription.count({ where: { isSubscribed: true } }),
-    prisma.subscription.count({ where: { plan: "FREE" } }),
-    prisma.subscription.count({ where: { plan: "PRO" } }),
-    prisma.subscription.count({ where: { plan: "ENTERPRISE" } }),
+    
+    // Active users (updated in last 7 days)
+    prisma.user.count({
+      where: {
+        updatedAt: {
+          gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+        },
+      },
+    }),
+    
+    // Inactive users (updated 7-30 days ago)
+    prisma.user.count({
+      where: {
+        updatedAt: {
+          gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+          lt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+        },
+      },
+    }),
+    
+    // Suspended users (not updated in 30+ days)
+    prisma.user.count({
+      where: {
+        updatedAt: {
+          lt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+        },
+      },
+    }),
+    
+    // Plan distribution from UserAnalytics
+    prisma.userAnalytics.count({ where: { planType: "FREE" } }),
+    prisma.userAnalytics.count({ where: { planType: "PRO" } }),
+    prisma.userAnalytics.count({ where: { planType: "ENTERPRISE" } }),
+    
+    // Recent users with analytics
     prisma.user.findMany({
       take: 5,
       orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        email: true,
-        fullName: true,
-        createdAt: true,
+      include: {
+        userAnalytics: true,
+      },
+    }),
+    
+    // Total spent across all users
+    prisma.userAnalytics.aggregate({
+      _sum: {
+        totalSpent: true,
+      },
+    }),
+    
+    // Total prompts across all users
+    prisma.userAnalytics.aggregate({
+      _sum: {
+        totalPromptPerDay: true,
       },
     }),
   ]);
 
   return {
     totalUsers,
-    activeSubscriptions,
+    activeUsers,
+    inactiveUsers,
+    suspendedUsers,
     planDistribution: {
       free: freeUsers,
       pro: proUsers,
       enterprise: enterpriseUsers,
     },
-    recentUsers,
+    recentUsers: recentUsers.map(user => ({
+      id: user.id,
+      email: user.email,
+      fullName: user.fullName,
+      createdAt: user.createdAt,
+      planType: user.userAnalytics?.planType || 'FREE',
+      totalSpent: user.userAnalytics?.totalSpent || 0,
+    })),
+    totalSpent: totalSpent._sum.totalSpent || 0,
+    totalPrompts: totalPrompts._sum.totalPromptPerDay || 0,
   };
 }
