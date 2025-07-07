@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
   output   = "../lib/generated/prisma"
@@ -12,6 +6,170 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String         @id @db.Uuid
+  createdAt         DateTime?      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime?      @default(now()) @map("updated_at") @db.Timestamptz(6)
+  fullName          String?        @map("full_name")
+  firstName         String?        @map("first_name")
+  lastName          String?        @map("last_name")
+  email             String?        @unique
+  phone             String?
+  dob               DateTime?      @db.Date
+  tgId              String?        @unique @map("tg_id")
+  authSessionTgId   String?
+  AuthSessionByTgId AuthSession?   @relation("AuthSessionUserByTgId")
+  AuthSessionById   AuthSession[]  @relation("AuthSessionUserById")
+  credit            Credit?
+  googleTokens      GoogleToken[]
+  logs              Log[]
+  offerClaims       OfferClaim[]
+  subscription      Subscription?
+  userAnalytics     UserAnalytics?
+  authSession       AuthSession?   @relation(fields: [authSessionTgId], references: [tgId])
+
+  @@map("users")
+}
+
+model Pricing {
+  id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt     DateTime?      @default(now()) @map("created_at") @db.Timestamptz(6)
+  planType      PlanType?      @unique @map("plan_type")
+  price         Float?
+  offers        Offer[]
+  subscriptions Subscription[]
+
+  @@map("pricing")
+}
+
+model Subscription {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt    DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  userId       String?   @unique @map("user_id") @db.Uuid
+  isSubscribed Boolean?  @map("is_subscribed")
+  plan         PlanType?
+  startDate    DateTime? @map("start_date") @db.Timestamptz(6)
+  endDate      DateTime? @map("end_date") @db.Timestamptz(6)
+  stripeId     String?   @map("stripe_id")
+  pricing      Pricing?  @relation(fields: [plan], references: [planType], map: "subscriptions_plan_fkey")
+  user         User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+model Credit {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt   DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  userId      String?   @unique @map("user_id") @db.Uuid
+  dailyLimit  Int?      @map("daily_limit")
+  usedToday   Int?      @map("used_today")
+  lastUpdated DateTime? @map("last_updated") @db.Timestamptz(6)
+  user        User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("credits")
+}
+
+model AuthSession {
+  createdAt    DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  tgId         String    @id @map("tg_id")
+  userId       String?   @map("user_id") @db.Uuid
+  tempKey      String?   @map("temp_key")
+  sessionValid Boolean?  @map("session_valid")
+  userByTgId   User      @relation("AuthSessionUserByTgId", fields: [tgId], references: [tgId], onDelete: Cascade)
+  userById     User?     @relation("AuthSessionUserById", fields: [userId], references: [id], onDelete: Cascade)
+  User         User[]
+
+  @@map("auth_sessions")
+}
+
+model Log {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  userId    String?   @map("user_id") @db.Uuid
+  type      LogType?
+  content   String?
+  isPremium Boolean?  @map("is_premium")
+  user      User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("logs")
+}
+
+model GoogleToken {
+  createdAt    DateTime?     @default(now()) @map("created_at") @db.Timestamptz(6)
+  userId       String        @map("user_id") @db.Uuid
+  services     GoogleService
+  accessToken  String?       @map("access_token")
+  refreshToken String?       @map("refresh_token")
+  expiry       DateTime?     @db.Timestamptz(6)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, services])
+  @@map("google_tokens")
+}
+
+model UserAnalytics {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt          DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  userId             String?   @unique @map("user_id") @db.Uuid
+  totalPromptPerDay  Int?      @map("total_prompt_per_day")
+  totalSpent         Float?    @map("total_spent")
+  planType           String?   @map("plan_type")
+  activeIntegrations String[]  @map("active_integrations")
+  user               User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_analytics")
+}
+
+model AdminAnalytics {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt          DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  totalUsers         Int?      @map("total_users")
+  topUsers           Json[]    @map("top_users")
+  activeIntegrations String[]  @map("active_integrations")
+  conversionRate     Float?    @map("conversion_rate")
+  mostUsedCommands   String[]  @map("most_used_commands")
+  recentlyAddedUsers Json[]    @map("recently_added_users")
+
+  @@map("admin_analytics")
+}
+
+model Offer {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt      DateTime?    @default(now()) @map("created_at") @db.Timestamptz(6)
+  priceId        String?      @map("price_id") @db.Uuid
+  offerType      OfferType?   @map("offer_type")
+  offerName      String?      @map("offer_name")
+  offerStatus    Boolean?     @map("offer_status")
+  expirationDate DateTime?    @map("expiration_date") @db.Timestamptz(6)
+  totalClaimed   Int?         @map("total_claimed")
+  offerClaims    OfferClaim[]
+  price          Pricing?     @relation(fields: [priceId], references: [id])
+
+  @@map("offers")
+}
+
+model OfferClaim {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  offerId   String?   @map("offer_id") @db.Uuid
+  userId    String?   @map("user_id") @db.Uuid
+  offer     Offer?    @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  user      User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("offer_claims")
+}
+
+model Announcement {
+  id            String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdAt     DateTime?           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime?           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  title         String?
+  body          String?
+  currentStatus AnnouncementStatus? @map("current_status")
+
+  @@map("announcements")
 }
 
 enum PlanType {
@@ -46,178 +204,4 @@ enum GoogleService {
   GMAIL
   CALENDAR
   DRIVE
-}
-
-model User {
-  id        String    @id @db.Uuid
-  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt DateTime? @default(now()) @map("updated_at") @db.Timestamptz
-  fullName  String?   @map("full_name")
-  firstName String?   @map("first_name")
-  lastName  String?   @map("last_name")
-  email     String?   @unique
-  phone     String?
-  dob       DateTime? @db.Date
-  tgId      String?   @unique @map("tg_id")
-
-  subscription      Subscription?
-  credit            Credit?
-  userAnalytics     UserAnalytics?
-  logs              Log[]
-  googleTokens      GoogleToken[]
-  offerClaims       OfferClaim[]
-  authSessionTgId   String?
-  authSession       AuthSession?   @relation(fields: [authSessionTgId], references: [tgId])
-  AuthSessionById   AuthSession[]  @relation(name: "AuthSessionUserById")
-  AuthSessionByTgId AuthSession[]  @relation(name: "AuthSessionUserByTgId")
-
-  @@map("users")
-}
-
-model Pricing {
-  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamptz
-  planType  PlanType? @unique @map("plan_type")
-  price     Float?
-
-  subscriptions Subscription[]
-  offers        Offer[]
-
-  @@map("pricing")
-}
-
-model Subscription {
-  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  createdAt    DateTime? @default(now()) @map("created_at") @db.Timestamptz
-  userId       String?   @unique @map("user_id") @db.Uuid
-  isSubscribed Boolean?  @map("is_subscribed")
-  plan         PlanType?
-  startDate    DateTime? @map("start_date") @db.Timestamptz
-  endDate      DateTime? @map("end_date") @db.Timestamptz
-  stripeId     String?   @map("stripe_id")
-
-  user    User?    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  pricing Pricing? @relation(fields: [plan], references: [planType], onDelete: SetNull, onUpdate: Cascade, map: "subscriptions_plan_fkey")
-
-  @@map("subscriptions")
-}
-
-model Credit {
-  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  createdAt   DateTime? @default(now()) @map("created_at") @db.Timestamptz
-  userId      String?   @unique @map("user_id") @db.Uuid
-  dailyLimit  Int?      @map("daily_limit")
-  usedToday   Int?      @map("used_today")
-  lastUpdated DateTime? @map("last_updated") @db.Timestamptz
-
-  user User? @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-
-  @@map("credits")
-}
-
-model AuthSession {
-  createdAt    DateTime? @default(now()) @map("created_at") @db.Timestamptz
-  tgId         String    @id @map("tg_id")
-  userId       String?   @map("user_id") @db.Uuid
-  tempKey      String?   @map("temp_key")
-  sessionValid Boolean?  @map("session_valid")
-
-  userById   User?  @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, name: "AuthSessionUserById")
-  userByTgId User?  @relation(fields: [tgId], references: [tgId], onDelete: Cascade, onUpdate: Cascade, name: "AuthSessionUserByTgId")
-  User       User[]
-
-  @@map("auth_sessions")
-}
-
-model Log {
-  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamptz
-  userId    String?   @map("user_id") @db.Uuid
-  type      LogType?
-  content   String?
-  isPremium Boolean?  @map("is_premium")
-
-  user User? @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-
-  @@map("logs")
-}
-
-model GoogleToken {
-  createdAt    DateTime?     @default(now()) @map("created_at") @db.Timestamptz
-  userId       String        @map("user_id") @db.Uuid
-  services     GoogleService
-  accessToken  String?       @map("access_token")
-  refreshToken String?       @map("refresh_token")
-  expiry       DateTime?     @db.Timestamptz
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-
-  @@id([userId, services])
-  @@map("google_tokens")
-}
-
-model UserAnalytics {
-  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  createdAt          DateTime? @default(now()) @map("created_at") @db.Timestamptz
-  userId             String?   @unique @map("user_id") @db.Uuid
-  totalPromptPerDay  Int?      @map("total_prompt_per_day")
-  totalSpent         Float?    @map("total_spent")
-  planType           String?   @map("plan_type")
-  activeIntegrations String[]  @map("active_integrations")
-
-  user User? @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-
-  @@map("user_analytics")
-}
-
-model AdminAnalytics {
-  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  createdAt          DateTime? @default(now()) @map("created_at") @db.Timestamptz
-  totalUsers         Int?      @map("total_users")
-  topUsers           Json[]    @map("top_users")
-  activeIntegrations String[]  @map("active_integrations")
-  conversionRate     Float?    @map("conversion_rate")
-  mostUsedCommands   String[]  @map("most_used_commands")
-  recentlyAddedUsers Json[]    @map("recently_added_users")
-
-  @@map("admin_analytics")
-}
-
-model Offer {
-  id             String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  createdAt      DateTime?  @default(now()) @map("created_at") @db.Timestamptz
-  priceId        String?    @map("price_id") @db.Uuid
-  offerType      OfferType? @map("offer_type")
-  offerName      String?    @map("offer_name")
-  offerStatus    Boolean?   @map("offer_status")
-  expirationDate DateTime?  @map("expiration_date") @db.Timestamptz
-  totalClaimed   Int?       @map("total_claimed")
-
-  price       Pricing?     @relation(fields: [priceId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  offerClaims OfferClaim[]
-
-  @@map("offers")
-}
-
-model OfferClaim {
-  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamptz
-  offerId   String?   @map("offer_id") @db.Uuid
-  userId    String?   @map("user_id") @db.Uuid
-
-  offer Offer? @relation(fields: [offerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  user  User?  @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-
-  @@map("offer_claims")
-}
-
-model Announcement {
-  id            String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  createdAt     DateTime?           @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt     DateTime?           @updatedAt @map("updated_at") @db.Timestamptz
-  title         String?
-  body          String?
-  currentStatus AnnouncementStatus? @map("current_status")
-
-  @@map("announcements")
 }
