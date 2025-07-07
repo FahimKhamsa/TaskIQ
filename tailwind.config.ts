@@ -59,6 +59,8 @@ export default {
         success: "hsl(var(--success))",
         warning: "hsl(var(--warning))",
         info: "hsl(var(--info))",
+        "theme-light": "hsl(106 76% 53%)",
+        "theme-dark": "hsl(270 95% 75%)",
       },
       backgroundImage: {
         "gradient-primary": "var(--gradient-primary)",

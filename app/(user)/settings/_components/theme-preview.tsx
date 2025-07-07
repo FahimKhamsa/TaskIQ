@@ -35,7 +35,7 @@ export function ThemePreview({
                 <div className="space-y-2 p-3">
                   <div className="h-2 w-3/4 rounded bg-gray-300"></div>
                   <div className="h-2 w-1/2 rounded bg-gray-200"></div>
-                  <div className="h-2 w-2/3 rounded bg-gray-300"></div>
+                  <div className="h-2 w-2/3 rounded bg-gray-300 border border-theme-light"></div>
                 </div>
               </div>
               {/* Dark side */}
@@ -44,7 +44,7 @@ export function ThemePreview({
                 <div className="space-y-2 p-3">
                   <div className="h-2 w-3/4 rounded bg-gray-600"></div>
                   <div className="h-2 w-1/2 rounded bg-gray-700"></div>
-                  <div className="h-2 w-2/3 rounded bg-gray-600"></div>
+                  <div className="h-2 w-2/3 rounded bg-gray-600 border border-theme-dark"></div>
                 </div>
               </div>
             </div>
@@ -58,7 +58,7 @@ export function ThemePreview({
               <div className="h-2 w-3/4 rounded bg-gray-300"></div>
               <div className="h-2 w-1/2 rounded bg-gray-200"></div>
               <div className="h-2 w-2/3 rounded bg-gray-300"></div>
-              <div className="mt-3 h-8 w-full rounded bg-gray-100"></div>
+              <div className="mt-3 h-8 w-full rounded bg-gray-100 border border-theme-light"></div>
             </div>
           </div>
         )}
@@ -70,7 +70,7 @@ export function ThemePreview({
               <div className="h-2 w-3/4 rounded bg-gray-600"></div>
               <div className="h-2 w-1/2 rounded bg-gray-700"></div>
               <div className="h-2 w-2/3 rounded bg-gray-600"></div>
-              <div className="mt-3 h-8 w-full rounded bg-gray-800"></div>
+              <div className="mt-3 h-8 w-full rounded bg-gray-800 border border-theme-dark"></div>
             </div>
           </div>
         )}

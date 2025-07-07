@@ -18,8 +18,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 270 95% 65%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 106 76% 43%;
+    --primary-foreground: 0 0% 100%;
 
     --secondary: 210 40% 96%;
     --secondary-foreground: 222.2 84% 4.9%;
@@ -35,7 +35,7 @@
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 270 95% 65%;
+    --ring: 106 76% 43%;
 
     --radius: 0.75rem;
 
@@ -48,7 +48,7 @@
     --info: 217 91% 60%;
     
     /* Gradients - Light */
-    --gradient-primary: linear-gradient(135deg, hsl(270 95% 65%), hsl(270 95% 55%));
+    --gradient-primary: linear-gradient(135deg, hsl(106 76% 53%), hsl(106 76% 33%));
     --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(210 40% 98%));
     
     /* Shadows - Light */
