@@ -1,6 +1,5 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../lib/generated/prisma"
 }
 
 datasource db {
@@ -20,6 +19,7 @@ model User {
   dob               DateTime?      @db.Date
   tgId              String?        @unique @map("tg_id")
   authSessionTgId   String?
+  role              UserRole?      @default(USER)
   AuthSessionByTgId AuthSession?   @relation("AuthSessionUserByTgId")
   AuthSessionById   AuthSession[]  @relation("AuthSessionUserById")
   credit            Credit?
@@ -204,4 +204,10 @@ enum GoogleService {
   GMAIL
   CALENDAR
   DRIVE
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  SUPER_ADMIN
 }
