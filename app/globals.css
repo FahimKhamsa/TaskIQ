@@ -59,6 +59,110 @@
     --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
+  /* Color Theme: Green (Default Light) */
+  .color-green {
+    --primary: 106 76% 43%;
+    --ring: 106 76% 43%;
+    --gradient-primary: linear-gradient(135deg, hsl(106 76% 53%), hsl(106 76% 33%));
+  }
+
+  .dark.color-green {
+    --primary: 106 76% 53%;
+    --ring: 106 76% 53%;
+    --gradient-primary: linear-gradient(135deg, hsl(106 76% 53%), hsl(106 76% 43%));
+  }
+
+  /* Color Theme: Purple (Default Dark) */
+  .color-purple {
+    --primary: 270 95% 65%;
+    --ring: 270 95% 65%;
+    --gradient-primary: linear-gradient(135deg, hsl(270 95% 75%), hsl(270 95% 55%));
+  }
+
+  .dark.color-purple {
+    --primary: 270 95% 75%;
+    --ring: 270 95% 75%;
+    --gradient-primary: linear-gradient(135deg, hsl(270 95% 75%), hsl(270 95% 65%));
+  }
+
+  /* Color Theme: Blue */
+  .color-blue {
+    --primary: 217 91% 50%;
+    --ring: 217 91% 50%;
+    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%), hsl(217 91% 40%));
+  }
+
+  .dark.color-blue {
+    --primary: 217 91% 60%;
+    --ring: 217 91% 60%;
+    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%), hsl(217 91% 50%));
+  }
+
+  /* Color Theme: Red */
+  .color-red {
+    --primary: 0 84% 50%;
+    --ring: 0 84% 50%;
+    --gradient-primary: linear-gradient(135deg, hsl(0 84% 60%), hsl(0 84% 40%));
+  }
+
+  .dark.color-red {
+    --primary: 0 84% 60%;
+    --ring: 0 84% 60%;
+    --gradient-primary: linear-gradient(135deg, hsl(0 84% 60%), hsl(0 84% 50%));
+  }
+
+  /* Color Theme: Orange */
+  .color-orange {
+    --primary: 25 95% 53%;
+    --ring: 25 95% 53%;
+    --gradient-primary: linear-gradient(135deg, hsl(25 95% 63%), hsl(25 95% 43%));
+  }
+
+  .dark.color-orange {
+    --primary: 25 95% 63%;
+    --ring: 25 95% 63%;
+    --gradient-primary: linear-gradient(135deg, hsl(25 95% 63%), hsl(25 95% 53%));
+  }
+
+  /* Color Theme: Pink */
+  .color-pink {
+    --primary: 330 81% 60%;
+    --ring: 330 81% 60%;
+    --gradient-primary: linear-gradient(135deg, hsl(330 81% 70%), hsl(330 81% 50%));
+  }
+
+  .dark.color-pink {
+    --primary: 330 81% 70%;
+    --ring: 330 81% 70%;
+    --gradient-primary: linear-gradient(135deg, hsl(330 81% 70%), hsl(330 81% 60%));
+  }
+
+  /* Color Theme: Teal */
+  .color-teal {
+    --primary: 173 80% 40%;
+    --ring: 173 80% 40%;
+    --gradient-primary: linear-gradient(135deg, hsl(173 80% 50%), hsl(173 80% 30%));
+  }
+
+  .dark.color-teal {
+    --primary: 173 80% 50%;
+    --ring: 173 80% 50%;
+    --gradient-primary: linear-gradient(135deg, hsl(173 80% 50%), hsl(173 80% 40%));
+  }
+
+  /* Color Theme: Indigo */
+  .color-indigo {
+    --primary: 231 48% 48%;
+    --ring: 231 48% 48%;
+    --gradient-primary: linear-gradient(135deg, hsl(231 48% 58%), hsl(231 48% 38%));
+  }
+
+  .dark.color-indigo {
+    --primary: 231 48% 58%;
+    --ring: 231 48% 58%;
+    --gradient-primary: linear-gradient(135deg, hsl(231 48% 58%), hsl(231 48% 48%));
+  }
+
   .dark {
     /* TaskIQ Dark Theme */
     --background: 220 6% 8%;
