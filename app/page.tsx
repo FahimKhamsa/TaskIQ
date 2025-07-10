@@ -17,6 +17,14 @@ import {
   Check,
   Play,
   Star,
+  Calendar,
+  Mail,
+  MapPin,
+  Activity,
+  MessageSquare,
+  Settings,
+  BarChart3,
+  Users,
 } from "lucide-react";
 import { useState } from "react";
 import Image from "next/image";
@@ -134,7 +142,7 @@ export default function LandingPage() {
     }, 1500);
   };
   return (
-    <div className="min-h-screen bg-transparent lr:px-0 sm:px-10">
+    <div className="min-h-screen bg-transparent lg:px-0 sm:px-10">
       {/* Lava Lamp Background */}
       <LavaLamp />
 
@@ -206,26 +214,231 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* Right side - Hero Image */}
+              {/* Right side - Dashboard Demo */}
               <div
                 className="animate-in slide-in-from-right-4 duration-1000"
                 style={{ animationDelay: "300ms" }}
               >
-                <div className="relative w-full">
-                  <div className="aspect-video bg-gradient-to-br from-purple-100 to-purple-50 rounded-2xl border border-purple-200 flex items-center justify-center shadow-2xl">
-                    <div className="text-center">
-                      <Bot className="h-16 w-16 text-purple-600 mx-auto mb-4 animate-bounce" />
-                      <p className="text-lg font-semibold text-gray-900">
-                        TaskIQ Dashboard Preview
-                      </p>
-                      <p className="text-sm text-gray-600 mt-2">
-                        AI-powered Google Services Integration
-                      </p>
+                <div className="relative w-full mix-blend-exclusion">
+                  <div className="aspect-video bg-black backdrop-blur-sm rounded-2xl border-2 border-gray-700 shadow-2xl p-4">
+                    <div className="h-full">
+                      <div className="bg-black rounded-lg p-3 space-y-3 min-h-[300px]">
+                        {/* Header */}
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-semibold text-white text-sm">
+                            Dashboard
+                          </h3>
+                          <Settings className="h-4 w-4 text-gray-400" />
+                        </div>
+
+                        {/* Stats Grid */}
+                        <div className="grid grid-cols-4 gap-1 mb-2">
+                          <Card className="bg-black border border-gray-600 shadow-sm">
+                            <CardHeader className="pb-1 p-2">
+                              <div className="flex items-center justify-between">
+                                <CardDescription className="text-xs text-gray-300">
+                                  Commands Used
+                                </CardDescription>
+                                <Activity className="h-2 w-2 text-gray-400" />
+                              </div>
+                            </CardHeader>
+                            <CardContent className="p-2 pt-0">
+                              <div className="flex items-baseline space-x-1">
+                                <div className="text-sm font-bold text-white">
+                                  2,847
+                                </div>
+                                <span className="text-xs bg-purple-900 text-purple-300 px-1 rounded">
+                                  +12%
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-400">
+                                This month
+                              </p>
+                            </CardContent>
+                          </Card>
+
+                          <Card className="bg-black border border-gray-600 shadow-sm">
+                            <CardHeader className="pb-1 p-2">
+                              <div className="flex items-center justify-between">
+                                <CardDescription className="text-xs text-gray-300">
+                                  Credits Remaining
+                                </CardDescription>
+                                <BarChart3 className="h-2 w-2 text-gray-400" />
+                              </div>
+                            </CardHeader>
+                            <CardContent className="p-2 pt-0">
+                              <div className="flex items-baseline space-x-1">
+                                <div className="text-sm font-bold text-white">
+                                  1,250
+                                </div>
+                                <span className="text-xs bg-gray-600 text-gray-300 px-1 rounded">
+                                  62.5%
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-400">
+                                Out of 2,000
+                              </p>
+                            </CardContent>
+                          </Card>
+
+                          <Card className="bg-black border border-gray-600 shadow-sm">
+                            <CardHeader className="pb-1 p-2">
+                              <div className="flex items-center justify-between">
+                                <CardDescription className="text-xs text-gray-300">
+                                  Active Integrations
+                                </CardDescription>
+                                <Users className="h-2 w-2 text-gray-400" />
+                              </div>
+                            </CardHeader>
+                            <CardContent className="p-2 pt-0">
+                              <div className="flex items-baseline space-x-1">
+                                <div className="text-sm font-bold text-white">
+                                  4
+                                </div>
+                                <span className="text-xs bg-purple-900 text-purple-300 px-1 rounded">
+                                  100%
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-400">
+                                All connected
+                              </p>
+                            </CardContent>
+                          </Card>
+
+                          <Card className="bg-black border border-gray-600 shadow-sm">
+                            <CardHeader className="pb-1 p-2">
+                              <div className="flex items-center justify-between">
+                                <CardDescription className="text-xs text-gray-300">
+                                  Bot Uptime
+                                </CardDescription>
+                                <Bot className="h-2 w-2 text-gray-400" />
+                              </div>
+                            </CardHeader>
+                            <CardContent className="p-2 pt-0">
+                              <div className="flex items-baseline space-x-1">
+                                <div className="text-sm font-bold text-white">
+                                  99.9%
+                                </div>
+                                <span className="text-xs bg-purple-900 text-purple-300 px-1 rounded">
+                                  +0.1%
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-400">
+                                Last 30 days
+                              </p>
+                            </CardContent>
+                          </Card>
+                        </div>
+
+                        {/* Bottom Section - Connected Services & Recent Activity */}
+                        <div className="grid grid-cols-2 gap-1">
+                          {/* Connected Services */}
+                          <Card className="bg-black border border-gray-600 shadow-sm">
+                            <CardHeader className="pb-1 p-2">
+                              <CardTitle className="text-xs text-white">
+                                Connected Services
+                              </CardTitle>
+                              <CardDescription className="text-xs text-gray-300">
+                                Your active Google integrations
+                              </CardDescription>
+                            </CardHeader>
+                            <CardContent className="p-2 pt-0">
+                              <div className="space-y-1">
+                                {[
+                                  {
+                                    name: "Gmail",
+                                    icon: Mail,
+                                    lastUsed: "2h ago",
+                                    status: "connected",
+                                  },
+                                  {
+                                    name: "Calendar",
+                                    icon: Calendar,
+                                    lastUsed: "5m ago",
+                                    status: "connected",
+                                  },
+                                  {
+                                    name: "Maps",
+                                    icon: MapPin,
+                                    lastUsed: "1d ago",
+                                    status: "connected",
+                                  },
+                                ].map((integration) => (
+                                  <div
+                                    key={integration.name}
+                                    className="flex items-center justify-between"
+                                  >
+                                    <div className="flex items-center space-x-1">
+                                      <integration.icon className="h-2 w-2 text-gray-400" />
+                                      <div>
+                                        <p className="text-xs font-medium text-white">
+                                          {integration.name}
+                                        </p>
+                                        <p className="text-xs text-gray-400">
+                                          Last used {integration.lastUsed}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <span className="text-xs bg-purple-900 text-purple-300 px-1 rounded capitalize">
+                                      {integration.status}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </CardContent>
+                          </Card>
+
+                          {/* Recent Activity */}
+                          <Card className="bg-black border border-gray-600 shadow-sm">
+                            <CardHeader className="pb-1 p-2">
+                              <CardTitle className="text-xs text-white">
+                                Recent Activity
+                              </CardTitle>
+                              <CardDescription className="text-xs text-gray-300">
+                                Your latest bot interactions
+                              </CardDescription>
+                            </CardHeader>
+                            <CardContent className="p-2 pt-0">
+                              <div className="space-y-1">
+                                {[
+                                  {
+                                    action: "Sent email via Gmail",
+                                    time: "2 minutes ago",
+                                  },
+                                  {
+                                    action: "Created calendar event",
+                                    time: "1 hour ago",
+                                  },
+                                  {
+                                    action: "Searched location on Maps",
+                                    time: "3 hours ago",
+                                  },
+                                ].map((activity) => (
+                                  <div
+                                    key={activity.action}
+                                    className="flex items-start space-x-1"
+                                  >
+                                    <div className="mt-1 h-1 w-1 flex-shrink-0 rounded-full bg-purple-400"></div>
+                                    <div>
+                                      <p className="text-xs font-medium text-white">
+                                        {activity.action}
+                                      </p>
+                                      <p className="text-xs text-gray-400">
+                                        {activity.time}
+                                      </p>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   {/* Floating elements */}
-                  <div className="absolute -top-4 -right-4 w-8 h-8 bg-purple-200 rounded-full animate-ping"></div>
-                  <div className="absolute -bottom-4 -left-4 w-6 h-6 bg-purple-300 rounded-full animate-pulse"></div>
+                  <div className="absolute -top-4 -right-4 w-8 h-8 bg-purple-500 rounded-full animate-ping"></div>
+                  <div className="absolute -bottom-4 -left-4 w-6 h-6 bg-purple-600 rounded-full animate-pulse"></div>
                 </div>
               </div>
             </div>
@@ -234,7 +447,7 @@ export default function LandingPage() {
 
         {/* Features Section */}
         <section className="py-24 bg-gray-50">
-          <div className="container mx-auto px-4">
+          <div className="w-full px-8 sm:px-12 lg:px-16 xl:px-20">
             <div className="text-center">
               <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
                 Everything you need
@@ -270,7 +483,7 @@ export default function LandingPage() {
 
         {/* Pricing Section */}
         <section id="pricing" className="py-24 bg-white">
-          <div className="container mx-auto px-4">
+          <div className="w-full px-8 sm:px-12 lg:px-16 xl:px-20">
             <div className="text-center">
               <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
                 Simple, transparent pricing
@@ -361,7 +574,7 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="border-t border-gray-200 bg-white">
-        <div className="container mx-auto px-4 py-12">
+        <div className="w-full px-8 sm:px-12 lg:px-16 xl:px-20 py-12">
           <div className="text-center">
             <div className="flex justify-center mb-4 tracking-tight mix-blend-exclusion">
               <Logo href="/" className="text-2xl text-black" />
