@@ -156,18 +156,47 @@ export const useUserAnalytics = (userId: string) => {
 };
 
 /**
- * Hook to get current user's analytics
+ * Hook to get current user's analytics with enhanced persistence and error handling
  */
 export const useCurrentUserAnalytics = (period: number = 30) => {
   const { data: user } = useUserProfile();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  return useQuery({
+  const query = useQuery({
     queryKey: ["current-user-analytics", user?.id, period],
     queryFn: () => apiCall(`/users/${user?.id}/analytics?period=${period}`),
     enabled: !!user?.id,
-    staleTime: 1000 * 60 * 10, // 10 minutes
+    staleTime: 1000 * 60 * 5, // 5 minutes - data considered fresh
+    gcTime: 1000 * 60 * 60, // 1 hour - keep in cache
+    refetchOnWindowFocus: true, // Refresh when user returns to tab
+    refetchOnReconnect: true, // Refresh when network reconnects
+    retry: 3, // Retry failed requests 3 times
     select: (data: any) => data.analytics,
+    meta: {
+      // Mark this query as important for persistence
+      persist: true,
+    },
   });
+
+  // Handle errors with cached data awareness
+  if (query.error && !query.data) {
+    const cachedData = queryClient.getQueryData([
+      "current-user-analytics",
+      user?.id,
+      period,
+    ]);
+
+    if (!cachedData) {
+      toast({
+        title: "Failed to load analytics",
+        description: "Unable to fetch dashboard data. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }
+
+  return query;
 };
 
 /**

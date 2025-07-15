@@ -18,10 +18,12 @@ interface RecentActivityProps {
 }
 
 export function RecentActivity({ analytics, isLoading }: RecentActivityProps) {
-  if (isLoading || isLoading === undefined || isLoading === null) {
+  const [isActivityExpanded, setIsActivityExpanded] = useState(false);
+
+  // Only show skeleton on true initial load (no cached data)
+  if (isLoading) {
     return <RecentActivitySkeleton />;
   }
-  const [isActivityExpanded, setIsActivityExpanded] = useState(false);
 
   // Get logs to display (first 3 for collapsed, all for expanded)
   const logsToShow = isActivityExpanded

@@ -8,9 +8,11 @@ interface StatsGridProps {
 }
 
 export function StatsGrid({ analytics, isLoading }: StatsGridProps) {
-  if (isLoading || isLoading === undefined || isLoading === null) {
+  // Only show skeleton on true initial load (no cached data)
+  if (isLoading) {
     return <StatsGridSkeleton />;
   }
+
   // Helper function to format numbers
   const formatNumber = (num: number) => {
     if (num >= 1000) {
@@ -27,6 +29,17 @@ export function StatsGrid({ analytics, isLoading }: StatsGridProps) {
           100
       )
     : 0;
+
+  // Provide fallback values for when analytics is undefined (shouldn't happen with persistence)
+  const safeAnalytics = analytics || {
+    summary: {
+      totalLogs: 0,
+      dailyLimit: 0,
+      usedToday: 0,
+      totalSpent: 0,
+      planType: "FREE",
+    },
+  };
 
   return (
     <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
