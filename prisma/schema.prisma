@@ -174,8 +174,9 @@ model Announcement {
 
 enum PlanType {
   FREE
-  PRO
-  ENTERPRISE
+  MONTHLY
+  BI_YEARLY
+  YEARLY
 }
 
 enum OfferType {
