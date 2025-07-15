@@ -19,6 +19,7 @@ import {
   CreditCard,
   Plug,
   LogOut,
+  DollarSign,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSupabase } from "@/providers/auth-provider";
@@ -78,6 +79,24 @@ export function Navbar() {
               >
                 <LayoutDashboard className="h-4 w-4" />
                 <span>Dashboard</span>
+              </Button>
+            </Link>
+
+            {/* Pricing Link */}
+            <Link href="/pricing" passHref>
+              <Button
+                variant={
+                  pathname.startsWith("/pricing") ? "secondary" : "ghost"
+                }
+                size="sm"
+                className={cn(
+                  "flex items-center space-x-2 transition-smooth",
+                  pathname.startsWith("/pricing") &&
+                    "bg-secondary text-secondary-foreground"
+                )}
+              >
+                <DollarSign className="h-4 w-4" />
+                <span>Pricing</span>
               </Button>
             </Link>
 

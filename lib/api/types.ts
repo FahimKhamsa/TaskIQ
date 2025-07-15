@@ -1,5 +1,5 @@
 // Base types from Prisma schema
-export type PlanType = "FREE" | "PRO" | "ENTERPRISE";
+export type PlanType = "FREE" | "MONTHLY" | "BI_YEARLY" | "YEARLY";
 export type OfferType = "PROMO" | "DISCOUNT" | "TRIAL" | "CREDIT_BONUS";
 export type AnnouncementStatus =
   | "DRAFT"
