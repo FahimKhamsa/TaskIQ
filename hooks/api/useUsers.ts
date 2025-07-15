@@ -156,6 +156,21 @@ export const useUserAnalytics = (userId: string) => {
 };
 
 /**
+ * Hook to get current user's analytics
+ */
+export const useCurrentUserAnalytics = (period: number = 30) => {
+  const { data: user } = useUserProfile();
+
+  return useQuery({
+    queryKey: ["current-user-analytics", user?.id, period],
+    queryFn: () => apiCall(`/users/${user?.id}/analytics?period=${period}`),
+    enabled: !!user?.id,
+    staleTime: 1000 * 60 * 10, // 10 minutes
+    select: (data: any) => data.analytics,
+  });
+};
+
+/**
  * Utility hook to check if user has premium subscription
  */
 export const useIsPremium = () => {
