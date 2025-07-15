@@ -174,7 +174,7 @@ export function CurrentPricingCard({
             ))}
           </div> */}
             <Button
-              className="w-full mt-auto"
+              className="w-full mt-auto hover:scale-105 transition-all duration-300"
               onClick={onManagePlan}
               variant="outline"
             >
