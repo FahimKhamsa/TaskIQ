@@ -5,6 +5,7 @@ import {
   StatsGrid,
   ConnectedServices,
   RecentActivity,
+  ConnectedServicesSkeleton,
 } from "./_components";
 
 export default function DashboardPage() {
@@ -17,7 +18,7 @@ export default function DashboardPage() {
         <StatsGrid analytics={analytics} isLoading={isLoading} />
 
         <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-2">
-          <ConnectedServices />
+          {isLoading ? <ConnectedServicesSkeleton /> : <ConnectedServices />}
           <RecentActivity analytics={analytics} isLoading={isLoading} />
         </div>
       </div>

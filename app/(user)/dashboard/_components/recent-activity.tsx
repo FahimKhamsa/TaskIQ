@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { ActivityLogItem } from "./activity-log-item";
+import { RecentActivitySkeleton } from "./recent-activity-skeleton";
 
 interface RecentActivityProps {
   analytics: any;
@@ -17,6 +18,9 @@ interface RecentActivityProps {
 }
 
 export function RecentActivity({ analytics, isLoading }: RecentActivityProps) {
+  if (isLoading || isLoading === undefined || isLoading === null) {
+    return <RecentActivitySkeleton />;
+  }
   const [isActivityExpanded, setIsActivityExpanded] = useState(false);
 
   // Get logs to display (first 3 for collapsed, all for expanded)
@@ -83,9 +87,7 @@ export function RecentActivity({ analytics, isLoading }: RecentActivityProps) {
                 : "max-h-none"
             }`}
           >
-            {isLoading ? (
-              <div className="text-sm text-muted-foreground">Loading...</div>
-            ) : logsToShow.length > 0 ? (
+            {logsToShow.length > 0 ? (
               logsToShow.map((log: any, index: number) => (
                 <ActivityLogItem
                   key={log.id}
