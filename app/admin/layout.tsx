@@ -20,8 +20,9 @@ import {
   Bell,
   Shield
 } from 'lucide-react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import AdminAuthGuard from '@/components/admin/AdminAuthGuard';
 
 const navigation = [
   { name: 'Analytics', href: '/admin', icon: BarChart3 },
@@ -36,8 +37,29 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
 
-  return (
+  const handleLogout = () => {
+    // Clear admin session
+    localStorage.removeItem('admin_logged_in');
+    localStorage.removeItem('admin_email');
+    localStorage.removeItem('admin_user_id');
+    localStorage.removeItem('admin_user_name');
+    router.push('/login');
+  };
+
+  // Get admin user info from localStorage
+  const getAdminInfo = () => {
+    if (typeof window !== 'undefined') {
+      return {
+        email: localStorage.getItem('admin_email') || 'admin@taskiq.com',
+        name: localStorage.getItem('admin_user_name') || 'Admin User'
+      };
+    }
+    return { email: 'admin@taskiq.com', name: 'Admin User' };
+  };
+
+  const AdminContent = () => (
     <div className="min-h-screen bg-[#0f0f0f] text-white">
       {/* Top Navigation */}
       <header className="border-b border-gray-800 bg-[#0f0f0f]">
@@ -90,8 +112,8 @@ export default function AdminLayout({
               <DropdownMenuContent className="w-56 bg-[#0f0f0f] border-gray-700" align="end">
                 <DropdownMenuLabel className="text-white">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium">Admin User</p>
-                    <p className="text-xs text-gray-400">admin@taskiq.com</p>
+                    <p className="text-sm font-medium">{getAdminInfo().name}</p>
+                    <p className="text-xs text-gray-400">{getAdminInfo().email}</p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator className="bg-gray-700" />
@@ -100,7 +122,10 @@ export default function AdminLayout({
                   Settings
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-gray-700" />
-                <DropdownMenuItem className="text-red-400 focus:text-red-300 focus:bg-gray-800">
+                <DropdownMenuItem 
+                  onClick={handleLogout}
+                  className="text-red-400 focus:text-red-300 focus:bg-gray-800"
+                >
                   <LogOut className="mr-2 h-4 w-4" />
                   Log out
                 </DropdownMenuItem>
@@ -115,5 +140,11 @@ export default function AdminLayout({
         {children}
       </main>
     </div>
+  );
+
+  return (
+    <AdminAuthGuard>
+      <AdminContent />
+    </AdminAuthGuard>
   );
 }

@@ -1,17 +1,13 @@
-import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { verifyAdminAuth, createUnauthorizedResponse } from "@/lib/admin-auth";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const supabase = createClient();
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser();
-
-    if (error || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // Verify admin authentication
+    const adminUser = verifyAdminAuth(request);
+    if (!adminUser) {
+      return createUnauthorizedResponse();
     }
 
     // TODO: Add admin role check
@@ -30,16 +26,21 @@ export async function GET() {
       console.error("Database health check failed:", error);
     }
 
-    // Check Supabase connectivity
-    let supabaseStatus = "healthy";
-    let supabaseResponseTime = 0;
+    // System memory and CPU check
+    let systemStatus = "healthy";
+    let systemResponseTime = 0;
     try {
-      const supabaseStart = Date.now();
-      await supabase.auth.getSession();
-      supabaseResponseTime = Date.now() - supabaseStart;
+      const systemStart = Date.now();
+      const memoryUsage = process.memoryUsage();
+      systemResponseTime = Date.now() - systemStart;
+      
+      // Check if memory usage is reasonable (less than 1GB)
+      if (memoryUsage.heapUsed > 1024 * 1024 * 1024) {
+        systemStatus = "warning";
+      }
     } catch (error) {
-      supabaseStatus = "unhealthy";
-      console.error("Supabase health check failed:", error);
+      systemStatus = "unhealthy";
+      console.error("System health check failed:", error);
     }
 
     // Get system metrics
@@ -51,7 +52,7 @@ export async function GET() {
 
     const totalResponseTime = Date.now() - startTime;
     const overallStatus =
-      dbStatus === "healthy" && supabaseStatus === "healthy"
+      dbStatus === "healthy" && systemStatus !== "unhealthy"
         ? "healthy"
         : "unhealthy";
 
@@ -65,9 +66,10 @@ export async function GET() {
           status: dbStatus,
           responseTime: dbResponseTime,
         },
-        supabase: {
-          status: supabaseStatus,
-          responseTime: supabaseResponseTime,
+        system: {
+          status: systemStatus,
+          responseTime: systemResponseTime,
+          memoryUsage: process.memoryUsage(),
         },
       },
       metrics: {

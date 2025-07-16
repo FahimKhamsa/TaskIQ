@@ -14,11 +14,30 @@ export async function apiCall<T>(
     data: { session },
   } = await supabase.auth.getSession();
 
+  // Get admin authentication info from localStorage for admin routes
+  const isAdminRoute = endpoint.startsWith('/admin');
+  let adminHeaders = {};
+  
+  if (isAdminRoute && typeof window !== 'undefined') {
+    const adminEmail = localStorage.getItem('admin_email');
+    const adminUserId = localStorage.getItem('admin_user_id');
+    const adminUserName = localStorage.getItem('admin_user_name');
+    
+    if (adminEmail && adminUserId) {
+      adminHeaders = {
+        'x-admin-email': adminEmail,
+        'x-admin-user-id': adminUserId,
+        'x-admin-user-name': adminUserName || adminEmail,
+      };
+    }
+  }
+
   const response = await fetch(`/api${endpoint}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
       ...(session && { Authorization: `Bearer ${session.access_token}` }),
+      ...adminHeaders,
       ...options.headers,
     },
   });

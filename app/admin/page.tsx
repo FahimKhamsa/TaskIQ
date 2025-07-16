@@ -20,22 +20,16 @@ import {
   Clock
 } from 'lucide-react';
 import { 
-  useAdminAnalytics, 
-  useFormattedAdminAnalytics, 
-  useAnalyticsStatus,
-  useGenerateAdminAnalytics,
+  useSystemStats,
   useSystemHealth 
 } from '@/hooks/api/useAdmin';
 
 export default function AdminDashboard() {
-  const { data: analytics, isLoading: analyticsLoading, error: analyticsError } = useAdminAnalytics();
+  const { data: systemStats, isLoading: statsLoading, error: statsError, refetch: refetchStats } = useSystemStats();
   const { data: systemHealth } = useSystemHealth();
-  const formattedAnalytics = useFormattedAdminAnalytics();
-  const analyticsStatus = useAnalyticsStatus();
-  const generateAnalytics = useGenerateAdminAnalytics();
 
-  const handleRefreshAnalytics = () => {
-    generateAnalytics.mutate({ forceRefresh: true });
+  const handleRefreshStats = () => {
+    refetchStats();
   };
 
   // Fallback data for when analytics is loading or unavailable
@@ -74,44 +68,44 @@ export default function AdminDashboard() {
     }
   ];
 
-  const stats = formattedAnalytics ? [
+  const stats = systemStats ? [
     {
-      title: formattedAnalytics.overview.totalUsers.label,
-      value: formattedAnalytics.overview.totalUsers.value,
+      title: "Total Users",
+      value: systemStats.totalUsers.toLocaleString(),
       change: "+2.3%", // You can calculate this from historical data
       changeType: "increase",
       icon: Users,
       description: "Total registered users"
     },
     {
-      title: formattedAnalytics.overview.conversionRate.label,
-      value: formattedAnalytics.overview.conversionRate.value,
+      title: "Conversion Rate",
+      value: `${systemStats.conversionRate.toFixed(1)}%`,
       change: "+0.5%",
       changeType: "increase",
       icon: TrendingUp,
       description: "Free to paid conversion"
     },
     {
-      title: formattedAnalytics.overview.activeIntegrations.label,
-      value: formattedAnalytics.overview.activeIntegrations.value,
+      title: "Active Integrations",
+      value: systemStats.activeIntegrations.length.toString(),
       change: "+1",
       changeType: "increase",
       icon: Activity,
       description: "Connected services"
     },
     {
-      title: formattedAnalytics.overview.topCommands.label,
-      value: formattedAnalytics.overview.topCommands.value,
-      change: "+2",
+      title: "Total Revenue",
+      value: `$${systemStats.totalRevenue.toLocaleString()}`,
+      change: "+12%",
       changeType: "increase",
       icon: DollarSign,
-      description: "Most used commands"
+      description: "Revenue from subscriptions"
     }
   ] : fallbackStats;
 
-  const topUsers = formattedAnalytics?.topUsers || [];
-  const recentUsers = formattedAnalytics?.recentUsers || [];
-  const topCommands = formattedAnalytics?.commands || [];
+  const topUsers = systemStats?.topUsers || [];
+  const recentUsers = systemStats?.recentUsers || [];
+  const topCommands = systemStats?.mostUsedCommands || [];
 
   const systemHealthData = [
     { service: "API Gateway", status: "healthy", uptime: "99.9%" },
@@ -139,32 +133,24 @@ export default function AdminDashboard() {
           <p className="text-gray-400 mt-1">Monitor system performance and user activity</p>
         </div>
         <div className="flex items-center space-x-2">
-          {analyticsStatus && (
+          {systemStats && (
             <Badge 
               variant="outline" 
-              className={
-                analyticsStatus.status === 'fresh' 
-                  ? "border-green-800 text-green-400"
-                  : analyticsStatus.status === 'aging'
-                  ? "border-yellow-800 text-yellow-400"
-                  : "border-red-800 text-red-400"
-              }
+              className="border-green-800 text-green-400"
             >
-              {analyticsStatus.status === 'fresh' && <CheckCircle className="w-3 h-3 mr-1" />}
-              {analyticsStatus.status === 'aging' && <Clock className="w-3 h-3 mr-1" />}
-              {analyticsStatus.status === 'stale' && <AlertCircle className="w-3 h-3 mr-1" />}
-              {analyticsStatus.message}
+              <CheckCircle className="w-3 h-3 mr-1" />
+              Live Data - {new Date(systemStats.lastUpdated).toLocaleTimeString()}
             </Badge>
           )}
           <Button
             variant="outline"
             size="sm"
-            onClick={handleRefreshAnalytics}
-            disabled={generateAnalytics.isPending}
+            onClick={handleRefreshStats}
+            disabled={statsLoading}
             className="border-gray-700 text-gray-300 hover:bg-gray-800"
           >
-            <RefreshCw className={`w-4 h-4 mr-2 ${generateAnalytics.isPending ? 'animate-spin' : ''}`} />
-            Refresh Analytics
+            <RefreshCw className={`w-4 h-4 mr-2 ${statsLoading ? 'animate-spin' : ''}`} />
+            Refresh Stats
           </Button>
         </div>
       </div>
@@ -254,20 +240,20 @@ export default function AdminDashboard() {
                     <div className="flex items-center space-x-3">
                       <div className="w-10 h-10 border border-gray-800 rounded-full flex items-center justify-center">
                         <span className="text-gray-400 font-medium text-sm">
-                          {user.name.split(' ').map((n: string) => n[0]).join('')}
+                          {user.name ? user.name.split(' ').map((n: string) => n[0]).join('') : 'U'}
                         </span>
                       </div>
                       <div>
-                        <p className="font-medium text-white">{user.name}</p>
-                        <p className="text-sm text-gray-400">{user.email}</p>
+                        <p className="font-medium text-white">{user.name || 'Unknown User'}</p>
+                        <p className="text-sm text-gray-400">{user.email || 'No email'}</p>
                       </div>
                     </div>
                     <div className="text-right">
                       <Badge variant="outline" className="mb-1 border-gray-700 text-gray-400">
-                        {user.plan}
+                        {user.plan || 'FREE'}
                       </Badge>
                       <p className="text-xs text-gray-500">
-                        {new Date(user.joined_at).toLocaleDateString()}
+                        {user.joined_at ? new Date(user.joined_at).toLocaleDateString() : 'Unknown date'}
                       </p>
                     </div>
                   </div>
@@ -340,7 +326,7 @@ export default function AdminDashboard() {
       )}
 
       {/* Active Integrations */}
-      {formattedAnalytics?.integrations && formattedAnalytics.integrations.length > 0 && (
+      {systemStats?.activeIntegrations && systemStats.activeIntegrations.length > 0 && (
         <Card className="bg-[#0f0f0f] border-gray-800">
           <CardHeader>
             <CardTitle className="text-white">Active Integrations</CardTitle>
@@ -348,7 +334,7 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
-              {formattedAnalytics.integrations.map((integration, index) => (
+              {systemStats.activeIntegrations.map((integration, index) => (
                 <Badge key={index} variant="outline" className="border-blue-700 text-blue-400">
                   {integration}
                 </Badge>
@@ -357,6 +343,85 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
       )}
+
+      {/* System Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="bg-[#0f0f0f] border-gray-800">
+          <CardHeader>
+            <CardTitle className="text-white">User Status</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-gray-400">Active:</span>
+                <span className="text-green-400">{systemStats?.activeUsers || 0}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Inactive:</span>
+                <span className="text-yellow-400">{systemStats?.inactiveUsers || 0}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Suspended:</span>
+                <span className="text-red-400">{systemStats?.suspendedUsers || 0}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-[#0f0f0f] border-gray-800">
+          <CardHeader>
+            <CardTitle className="text-white">Subscriptions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-gray-400">Total:</span>
+                <span className="text-white">{systemStats?.totalSubscriptions || 0}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Active:</span>
+                <span className="text-green-400">{systemStats?.activeSubscriptions || 0}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-[#0f0f0f] border-gray-800">
+          <CardHeader>
+            <CardTitle className="text-white">Plan Distribution</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-gray-400">Free:</span>
+                <span className="text-blue-400">{systemStats?.planDistribution.free || 0}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Monthly:</span>
+                <span className="text-purple-400">{systemStats?.planDistribution.monthly || 0}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Yearly:</span>
+                <span className="text-orange-400">{systemStats?.planDistribution.yearly || 0}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-[#0f0f0f] border-gray-800">
+          <CardHeader>
+            <CardTitle className="text-white">Credits Usage</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-gray-400">Used Today:</span>
+                <span className="text-white">{systemStats?.totalCreditsUsed || 0}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

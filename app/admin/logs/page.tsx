@@ -50,6 +50,8 @@ import {
 } from 'lucide-react';
 import { useAdminLogs, useCreateLog, useUpdateLog, useDeleteLog } from '@/hooks/api/useAdmin';
 import type { LogType, CreateLogRequest, UpdateLogRequest } from '@/lib/api/types';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export default function LogsViewer() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -140,8 +142,97 @@ export default function LogsViewer() {
     refetch();
   };
 
+  const handleExportPDF = async () => {
+    try {
+      // Create new PDF document
+      const doc = new jsPDF();
+      
+      // Add title
+      doc.setFontSize(20);
+      doc.text('TaskIQ - System Logs Report', 20, 20);
+      
+      // Add generation date
+      doc.setFontSize(12);
+      doc.text(`Generated on: ${new Date().toLocaleString()}`, 20, 35);
+      
+      // Add summary statistics
+      doc.setFontSize(14);
+      doc.text('Log Statistics:', 20, 55);
+      doc.setFontSize(10);
+      doc.text(`Total Logs: ${logStats.total}`, 20, 65);
+      doc.text(`Success: ${logStats.success}`, 20, 75);
+      doc.text(`Info: ${logStats.info}`, 20, 85);
+      doc.text(`Warnings: ${logStats.warning}`, 20, 95);
+      doc.text(`Errors: ${logStats.error}`, 20, 105);
+      
+      // Add filters info if any
+      if (searchTerm || filterLevel) {
+        doc.text('Applied Filters:', 20, 120);
+        if (searchTerm) doc.text(`Search: "${searchTerm}"`, 20, 130);
+        if (filterLevel) doc.text(`Level: ${filterLevel}`, 20, 140);
+      }
+      
+      // Prepare table data
+      const tableData = logs.map((log: any) => [
+        new Date(log.createdAt).toLocaleString(),
+        log.displayType,
+        log.userDisplay,
+        log.content.length > 50 ? log.content.substring(0, 50) + '...' : log.content,
+        log.isPremiumAction ? 'Yes' : 'No'
+      ]);
+      
+      // Add table
+      autoTable(doc, {
+        head: [['Timestamp', 'Type', 'User', 'Content', 'Premium']],
+        body: tableData,
+        startY: filterLevel || searchTerm ? 150 : 120,
+        styles: {
+          fontSize: 8,
+          cellPadding: 3,
+        },
+        headStyles: {
+          fillColor: [41, 128, 185],
+          textColor: 255,
+          fontStyle: 'bold',
+        },
+        alternateRowStyles: {
+          fillColor: [245, 245, 245],
+        },
+        columnStyles: {
+          0: { cellWidth: 35 }, // Timestamp
+          1: { cellWidth: 20 }, // Type
+          2: { cellWidth: 30 }, // User
+          3: { cellWidth: 80 }, // Content
+          4: { cellWidth: 15 }, // Premium
+        },
+        margin: { top: 20, right: 20, bottom: 20, left: 20 },
+      });
+      
+      // Add footer
+      const pageCount = doc.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.text(
+          `Page ${i} of ${pageCount} | TaskIQ Admin Dashboard`,
+          doc.internal.pageSize.width / 2,
+          doc.internal.pageSize.height - 10,
+          { align: 'center' }
+        );
+      }
+      
+      // Save the PDF
+      const fileName = `taskiq-logs-${new Date().toISOString().split('T')[0]}.pdf`;
+      doc.save(fileName);
+      
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
+    }
+  };
+
   const logStats = {
-    total: stats.overall.INFO + stats.overall.SUCCESS + stats.overall.WARNING + stats.overall.ERROR || 0,
+    total: stats.total || 0,
     success: stats.overall.SUCCESS || 0,
     info: stats.overall.INFO || 0,
     warning: stats.overall.WARNING || 0,
@@ -166,7 +257,12 @@ export default function LogsViewer() {
             <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
-          <Button variant="outline" className="border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800">
+          <Button 
+            variant="outline" 
+            onClick={handleExportPDF}
+            disabled={isLoading || logs.length === 0}
+            className="border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800"
+          >
             <Download className="w-4 h-4 mr-2" />
             Export Logs
           </Button>

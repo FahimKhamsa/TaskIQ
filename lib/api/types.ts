@@ -9,6 +9,8 @@ export type AnnouncementStatus =
   | "ARCHIVED";
 export type LogType = "INFO" | "SUCCESS" | "WARNING" | "ERROR";
 export type GoogleService = "GMAIL" | "CALENDAR" | "DRIVE";
+export type UserRole = "USER" | "ADMIN" | "SUPER_ADMIN";
+export type UserStatus = "ACTIVE" | "INACTIVE" | "SUSPENDED";
 
 // Core entity types
 export interface User {
@@ -23,6 +25,8 @@ export interface User {
   dob: Date | null;
   tgId: string | null;
   authSessionTgId: string | null;
+  role: UserRole | null;
+  status: UserStatus | null;
 }
 
 export interface Pricing {
@@ -219,6 +223,39 @@ export interface AdminStatsResponse {
   conversionRate: number;
 }
 
+export interface SystemStatsResponse {
+  totalUsers: number;
+  activeUsers: number;
+  inactiveUsers: number;
+  suspendedUsers: number;
+  totalSubscriptions: number;
+  activeSubscriptions: number;
+  totalCreditsUsed: number;
+  totalRevenue: number;
+  conversionRate: number;
+  planDistribution: {
+    free: number;
+    monthly: number;
+    yearly: number;
+    bi_yearly: number;
+  };
+  recentUsers: Array<{
+    name: string;
+    email: string;
+    joined_at: string;
+    plan: string;
+  }>;
+  topUsers: Array<{
+    user: string;
+    prompts: number;
+    credits_used: number;
+    joined_at: string;
+  }>;
+  activeIntegrations: string[];
+  mostUsedCommands: string[];
+  lastUpdated: string;
+}
+
 export interface SystemHealthResponse {
   status: "healthy" | "degraded" | "down";
   database: "connected" | "disconnected";
@@ -246,9 +283,21 @@ export interface GenerateAnalyticsRequest {
   forceRefresh?: boolean;
 }
 
+// Admin User with computed fields for display
+export interface AdminUser extends User {
+  planType: string;
+  totalPrompts: number;
+  totalSpent: number;
+  activeIntegrations: string[];
+  remainingCredits: number;
+  credit: Credit | null;
+  subscription: Subscription | null;
+  userAnalytics: UserAnalytics | null;
+}
+
 // Admin Users API Response types
 export interface AdminUsersResponse {
-  users: UserWithRelations[];
+  users: AdminUser[];
   pagination: {
     page: number;
     limit: number;
@@ -262,10 +311,18 @@ export interface AdminUsersResponse {
     suspendedUsers: number;
     planDistribution: {
       free: number;
-      pro: number;
-      enterprise: number;
+      monthly: number;
+      yearly: number;
+      bi_yearly: number;
     };
-    recentUsers: any[];
+    recentUsers: {
+      id: string;
+      email: string;
+      fullName: string;
+      createdAt: Date | null;
+      planType: string;
+      totalSpent: number;
+    }[];
     totalSpent: number;
     totalPrompts: number;
   };

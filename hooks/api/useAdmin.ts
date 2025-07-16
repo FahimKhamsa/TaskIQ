@@ -3,12 +3,14 @@ import { apiCall } from "@/lib/api/client";
 import { useToast } from "@/hooks/use-toast";
 import type {
   AdminStatsResponse,
+  SystemStatsResponse,
   SystemHealthResponse,
   AdminAnalytics,
   AdminAnalyticsResponse,
   AdminAnalyticsListResponse,
   GenerateAnalyticsRequest,
   AdminUsersResponse,
+  AdminUser,
   AdminLogsResponse,
   CreateLogRequest,
   UpdateLogRequest,
@@ -17,13 +19,25 @@ import type {
 } from "@/lib/api/types";
 
 /**
- * Hook to fetch admin analytics/stats
+ * Hook to fetch admin analytics/stats (legacy)
  */
 export const useAdminStats = () => {
   return useQuery({
     queryKey: ["admin-stats"],
     queryFn: () => apiCall<AdminStatsResponse>("/admin/system/stats"),
     staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+};
+
+/**
+ * Hook to fetch system statistics with real-time data
+ */
+export const useSystemStats = () => {
+  return useQuery({
+    queryKey: ["system-stats"],
+    queryFn: () => apiCall<SystemStatsResponse>("/admin/system/stats"),
+    staleTime: 1000 * 60 * 2, // 2 minutes
+    refetchInterval: 1000 * 60 * 5, // Refetch every 5 minutes
   });
 };
 
@@ -477,12 +491,210 @@ export const useDeleteLog = () => {
 /**
  * Hook to get user management data (admin only)
  */
-export const useAdminUsers = (page: number = 1, limit: number = 20) => {
+export const useAdminUsers = (
+  page: number = 1, 
+  limit: number = 20, 
+  options?: {
+    search?: string;
+    planFilter?: string;
+    statusFilter?: string;
+    forceRefresh?: boolean;
+  }
+) => {
+  const params = new URLSearchParams();
+  params.set('page', page.toString());
+  params.set('limit', limit.toString());
+  
+  if (options?.search) params.set('search', options.search);
+  if (options?.planFilter) params.set('plan', options.planFilter);
+  if (options?.statusFilter) params.set('status', options.statusFilter);
+  if (options?.forceRefresh) params.set('refresh', 'true');
+
   return useQuery({
-    queryKey: ["admin-users", page, limit],
-    queryFn: () => apiCall<AdminUsersResponse>(`/admin/users?page=${page}&limit=${limit}`),
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    queryKey: ["admin-users", page, limit, options?.search, options?.planFilter, options?.statusFilter],
+    queryFn: () => apiCall<AdminUsersResponse>(`/admin/users?${params.toString()}`),
+    staleTime: options?.forceRefresh ? 0 : 1000 * 60 * 2, // 2 minutes, 0 if force refresh
+    gcTime: 1000 * 60 * 10, // 10 minutes garbage collection
+    refetchOnWindowFocus: false,
+    retry: 2,
   });
+};
+
+/**
+ * Hook for user management operations with optimistic updates
+ */
+export const useUserManagementOperations = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const suspendUser = useMutation({
+    mutationFn: async ({ userId, action }: { userId: string; action: 'suspend' | 'unsuspend' }) => {
+      const endpoint = action === 'suspend' ? 'suspend' : 'unsuspend';
+      return apiCall(`/admin/users/${userId}/${endpoint}`, {
+        method: 'POST',
+      });
+    },
+    onMutate: async ({ userId, action }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["admin-users"] });
+
+      // Snapshot the previous value
+      const previousUsers = queryClient.getQueriesData({ queryKey: ["admin-users"] });
+
+      // Optimistically update the user status
+      queryClient.setQueriesData({ queryKey: ["admin-users"] }, (old: any) => {
+        if (!old) return old;
+        
+        return {
+          ...old,
+          users: old.users.map((user: AdminUser) => 
+            user.id === userId 
+              ? { ...user, status: action === 'suspend' ? 'suspended' : 'active' }
+              : user
+          ),
+          stats: {
+            ...old.stats,
+            suspendedUsers: action === 'suspend' 
+              ? old.stats.suspendedUsers + 1 
+              : Math.max(0, old.stats.suspendedUsers - 1),
+            activeUsers: action === 'suspend' 
+              ? Math.max(0, old.stats.activeUsers - 1)
+              : old.stats.activeUsers + 1,
+          }
+        };
+      });
+
+      return { previousUsers };
+    },
+    onError: (err, variables, context) => {
+      // Revert optimistic update on error
+      if (context?.previousUsers) {
+        context.previousUsers.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+      
+      toast({
+        title: `Error ${variables.action}ing user`,
+        description: err instanceof Error ? err.message : 'Unknown error occurred',
+        variant: "destructive",
+      });
+    },
+    onSuccess: (data, variables) => {
+      toast({
+        title: `User ${variables.action}ed successfully`,
+        description: `The user has been ${variables.action}ed.`,
+      });
+    },
+    onSettled: () => {
+      // Always refetch after mutation
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+  });
+
+  const deleteUser = useMutation({
+    mutationFn: async (userId: string) => {
+      return apiCall(`/admin/users/${userId}`, {
+        method: 'DELETE',
+      });
+    },
+    onMutate: async (userId) => {
+      await queryClient.cancelQueries({ queryKey: ["admin-users"] });
+      
+      const previousUsers = queryClient.getQueriesData({ queryKey: ["admin-users"] });
+
+      // Optimistically remove the user
+      queryClient.setQueriesData({ queryKey: ["admin-users"] }, (old: any) => {
+        if (!old) return old;
+        
+        return {
+          ...old,
+          users: old.users.filter((user: AdminUser) => user.id !== userId),
+          stats: {
+            ...old.stats,
+            totalUsers: Math.max(0, old.stats.totalUsers - 1),
+          }
+        };
+      });
+
+      return { previousUsers };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousUsers) {
+        context.previousUsers.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+      
+      toast({
+        title: "Error deleting user",
+        description: err instanceof Error ? err.message : 'Unknown error occurred',
+        variant: "destructive",
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "User deleted successfully",
+        description: "The user has been permanently deleted.",
+      });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+  });
+
+  const updateUser = useMutation({
+    mutationFn: async ({ userId, userData }: { userId: string; userData: any }) => {
+      return apiCall(`/admin/users/${userId}`, {
+        method: 'PUT',
+        body: JSON.stringify(userData),
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "User updated successfully",
+        description: "User information has been updated.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+    onError: (err) => {
+      toast({
+        title: "Error updating user",
+        description: err instanceof Error ? err.message : 'Unknown error occurred',
+        variant: "destructive",
+      });
+    },
+  });
+
+  const createUser = useMutation({
+    mutationFn: async (userData: any) => {
+      return apiCall('/admin/users', {
+        method: 'POST',
+        body: JSON.stringify(userData),
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "User created successfully",
+        description: "New user has been added to the system.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+    onError: (err) => {
+      toast({
+        title: "Error creating user",
+        description: err instanceof Error ? err.message : 'Unknown error occurred',
+        variant: "destructive",
+      });
+    },
+  });
+
+  return {
+    suspendUser,
+    deleteUser,
+    updateUser,
+    createUser,
+  };
 };
 
 /**
@@ -524,41 +736,41 @@ export const useBanUser = () => {
  * Utility hook to format admin stats for dashboard
  */
 export const useFormattedAdminStats = () => {
-  const { data: stats } = useAdminStats();
-  const { data: health } = useSystemHealth();
+  const { data: statsData } = useAdminStats();
+  const { data: healthData } = useSystemHealth();
 
-  if (!stats) return null;
+  if (!statsData) return null;
 
   return {
     totalUsers: {
-      value: stats.totalUsers.toLocaleString(),
+      value: statsData.totalUsers.toLocaleString(),
       label: "Total Users",
-      trend: stats.activeUsers > 0 ? "up" : "stable",
+      trend: statsData.activeUsers > 0 ? "up" : "stable",
     },
     activeUsers: {
-      value: stats.activeUsers.toLocaleString(),
+      value: statsData.activeUsers.toLocaleString(),
       label: "Active Users",
       trend: "up",
     },
     totalCreditsUsed: {
-      value: stats.totalCreditsUsed.toLocaleString(),
+      value: statsData.totalCreditsUsed.toLocaleString(),
       label: "Credits Used",
       trend: "up",
     },
     totalRevenue: {
-      value: `$${stats.totalRevenue.toLocaleString()}`,
+      value: `$${statsData.totalRevenue.toLocaleString()}`,
       label: "Total Revenue",
       trend: "up",
     },
     conversionRate: {
-      value: `${(stats.conversionRate * 100).toFixed(1)}%`,
+      value: `${(statsData.conversionRate * 100).toFixed(1)}%`,
       label: "Conversion Rate",
-      trend: stats.conversionRate > 0.1 ? "up" : "down",
+      trend: statsData.conversionRate > 0.1 ? "up" : "down",
     },
     systemHealth: {
-      value: health?.status || "unknown",
+      value: healthData?.status || "unknown",
       label: "System Health",
-      trend: health?.status === "healthy" ? "up" : "down",
+      trend: healthData?.status === "healthy" ? "up" : "down",
     },
   };
 };

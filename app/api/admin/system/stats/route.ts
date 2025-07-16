@@ -1,8 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const supabase = createClient();
     const {
@@ -14,214 +14,187 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // TODO: Add admin role check
+    console.log("Fetching system stats for admin:", user.id);
 
-    // Get comprehensive system statistics
-    const stats = await getSystemStats();
+    // Get the latest admin analytics data first
+    const latestAnalytics = await prisma.adminAnalytics.findFirst({
+      orderBy: { createdAt: "desc" }
+    });
 
-    return NextResponse.json({ stats });
+    // Get real-time statistics from database
+    const [
+      totalUsers,
+      activeUsers,
+      inactiveUsers,
+      suspendedUsers,
+      totalSubscriptions,
+      activeSubscriptions,
+      totalCreditsUsed,
+      totalRevenue,
+      recentUsers,
+      topUsers,
+      planDistribution,
+      integrationStats,
+      logStats
+    ] = await Promise.all([
+      // User counts
+      prisma.user.count(),
+      prisma.user.count({ where: { status: "ACTIVE" } }),
+      prisma.user.count({ where: { status: "INACTIVE" } }),
+      prisma.user.count({ where: { status: "SUSPENDED" } }),
+      
+      // Subscription stats
+      prisma.subscription.count(),
+      prisma.subscription.count({ where: { isSubscribed: true } }),
+      
+      // Credit usage
+      prisma.credit.aggregate({
+        _sum: { usedToday: true },
+      }).then(result => result._sum.usedToday || 0),
+      
+      // Revenue (simplified calculation)
+      prisma.subscription.count({ where: { isSubscribed: true } }).then(count => count * 10),
+      
+      // Recent users (last 30 days)
+      prisma.user.findMany({
+        take: 10,
+        where: {
+          createdAt: {
+            gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+          }
+        },
+        select: {
+          id: true,
+          email: true,
+          fullName: true,
+          createdAt: true,
+          subscription: {
+            select: { plan: true }
+          }
+        },
+        orderBy: { createdAt: "desc" }
+      }),
+      
+      // Top users by activity (simplified)
+      prisma.user.findMany({
+        take: 10,
+        include: {
+          userAnalytics: true,
+          subscription: true,
+          credit: true,
+          _count: {
+            select: { logs: true }
+          }
+        },
+        orderBy: { createdAt: "desc" }
+      }),
+      
+      // Plan distribution
+      prisma.subscription.groupBy({
+        by: ["plan"],
+        _count: { plan: true }
+      }).catch(() => []),
+      
+      // Integration statistics
+      prisma.userAnalytics.findMany({
+        select: { activeIntegrations: true }
+      }).then(analytics => {
+        const allIntegrations = analytics.flatMap(a => a.activeIntegrations || []);
+        const counts = allIntegrations.reduce((acc, integration) => {
+          acc[integration] = (acc[integration] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+        return Object.entries(counts).sort(([,a], [,b]) => b - a).slice(0, 5);
+      }).catch(() => []),
+      
+      // Log statistics
+      prisma.log.groupBy({
+        by: ["type"],
+        _count: { type: true },
+        where: {
+          createdAt: {
+            gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+          }
+        }
+      }).catch(() => [])
+    ]);
+
+    // Use conversion rate from admin analytics if available, otherwise calculate
+    const conversionRate = latestAnalytics?.conversionRate || 
+      (totalUsers > 0 ? (activeSubscriptions / totalUsers) * 100 : 0);
+
+    // Process plan distribution
+    const planMap = planDistribution.reduce((acc, item) => {
+      acc[item.plan?.toLowerCase() || 'free'] = item._count.plan;
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Use data from admin analytics if available, otherwise use calculated data
+    const formattedRecentUsers = latestAnalytics?.recentlyAddedUsers || 
+      recentUsers.map(user => ({
+        name: user.fullName || 'Unknown User',
+        email: user.email || '',
+        joined_at: user.createdAt?.toISOString() || new Date().toISOString(),
+        plan: user.subscription?.plan || 'FREE'
+      }));
+
+    const formattedTopUsers = latestAnalytics?.topUsers || 
+      topUsers.map(user => ({
+        user: user.fullName || user.email || 'Unknown User',
+        prompts: user._count.logs,
+        credits_used: user.userAnalytics?.totalPromptPerDay || 0,
+        joined_at: user.createdAt?.toISOString() || new Date().toISOString(),
+      }));
+
+    // Use most used commands from admin analytics if available
+    const mostUsedCommands = latestAnalytics?.mostUsedCommands || 
+      logStats.map(stat => stat.type).filter(Boolean);
+
+    // Use active integrations from admin analytics if available
+    const activeIntegrationsFromAnalytics = latestAnalytics?.activeIntegrations || 
+      integrationStats.map(([name]) => name);
+
+    const stats = {
+      totalUsers,
+      activeUsers,
+      inactiveUsers,
+      suspendedUsers,
+      totalSubscriptions,
+      activeSubscriptions,
+      totalCreditsUsed,
+      totalRevenue: totalRevenue,
+      conversionRate: Math.round(conversionRate * 100) / 100,
+      planDistribution: {
+        free: planMap.free || 0,
+        monthly: planMap.monthly || 0,
+        yearly: planMap.yearly || 0,
+        bi_yearly: planMap.bi_yearly || 0,
+      },
+      recentUsers: formattedRecentUsers,
+      topUsers: formattedTopUsers,
+      activeIntegrations: activeIntegrationsFromAnalytics,
+      mostUsedCommands,
+      lastUpdated: new Date().toISOString()
+    };
+
+    console.log("System stats calculated:", {
+      totalUsers,
+      activeUsers,
+      conversionRate,
+      recentUsersCount: formattedRecentUsers.length,
+      topUsersCount: formattedTopUsers.length,
+      usingAnalyticsData: !!latestAnalytics
+    });
+
+    return NextResponse.json(stats);
   } catch (error) {
     console.error("Error fetching system stats:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { 
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : "Unknown error"
+      },
       { status: 500 }
     );
   }
-}
-
-async function getSystemStats() {
-  const now = new Date();
-  const last24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-  const last7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-
-  const [
-    // User statistics
-    totalUsers,
-    newUsersLast24h,
-    newUsersLast7d,
-    newUsersLast30d,
-    activeUsersLast24h,
-
-    // Subscription statistics
-    totalSubscriptions,
-    activeSubscriptions,
-    subscriptionsByPlan,
-
-    // Credit statistics
-    totalCreditsUsed,
-    creditsUsedLast24h,
-    creditsUsedLast7d,
-
-    // Log statistics
-    totalLogs,
-    logsLast24h,
-    logsByType,
-
-    // Offer statistics
-    totalOffers,
-    activeOffers,
-    totalOfferClaims,
-
-    // Announcement statistics
-    totalAnnouncements,
-    publishedAnnouncements,
-
-    // System performance
-    avgResponseTime,
-  ] = await Promise.all([
-    // User statistics
-    prisma.user.count(),
-    prisma.user.count({
-      where: { createdAt: { gte: last24Hours } },
-    }),
-    prisma.user.count({
-      where: { createdAt: { gte: last7Days } },
-    }),
-    prisma.user.count({
-      where: { createdAt: { gte: last30Days } },
-    }),
-    prisma.log.findMany({
-      where: { createdAt: { gte: last24Hours } },
-      select: { userId: true },
-      distinct: ["userId"],
-    }),
-
-    // Subscription statistics
-    prisma.subscription.count(),
-    prisma.subscription.count({
-      where: { isSubscribed: true },
-    }),
-    prisma.subscription.groupBy({
-      by: ["plan"],
-      _count: { plan: true },
-    }),
-
-    // Credit statistics
-    prisma.credit.aggregate({
-      _sum: { usedToday: true },
-    }),
-    prisma.log.count({
-      where: {
-        createdAt: { gte: last24Hours },
-        content: { contains: "Consumed" },
-      },
-    }),
-    prisma.log.count({
-      where: {
-        createdAt: { gte: last7Days },
-        content: { contains: "Consumed" },
-      },
-    }),
-
-    // Log statistics
-    prisma.log.count(),
-    prisma.log.count({
-      where: { createdAt: { gte: last24Hours } },
-    }),
-    prisma.log.groupBy({
-      by: ["type"],
-      _count: { type: true },
-    }),
-
-    // Offer statistics
-    prisma.offer.count(),
-    prisma.offer.count({
-      where: { offerStatus: true },
-    }),
-    prisma.offerClaim.count(),
-
-    // Announcement statistics
-    prisma.announcement.count(),
-    prisma.announcement.count({
-      where: { currentStatus: "PUBLISHED" },
-    }),
-
-    // System performance (mock data - in real app, you'd track this)
-    Promise.resolve(150), // Average response time in ms
-  ]);
-
-  // Process subscription data
-  const planDistribution = subscriptionsByPlan.reduce(
-    (acc: Record<string, number>, item: any) => {
-      acc[item.plan || "UNKNOWN"] = item._count.plan;
-      return acc;
-    },
-    {}
-  );
-
-  // Process log data
-  const logTypeDistribution = logsByType.reduce(
-    (acc: Record<string, number>, item: any) => {
-      acc[item.type || "UNKNOWN"] = item._count.type;
-      return acc;
-    },
-    {}
-  );
-
-  // Calculate growth rates
-  const userGrowthRate24h =
-    totalUsers > 0 ? (newUsersLast24h / totalUsers) * 100 : 0;
-  const userGrowthRate7d =
-    totalUsers > 0 ? (newUsersLast7d / totalUsers) * 100 : 0;
-  const userGrowthRate30d =
-    totalUsers > 0 ? (newUsersLast30d / totalUsers) * 100 : 0;
-
-  // Calculate conversion rate
-  const conversionRate =
-    totalUsers > 0 ? (activeSubscriptions / totalUsers) * 100 : 0;
-
-  return {
-    overview: {
-      totalUsers,
-      activeSubscriptions,
-      totalCreditsUsed: totalCreditsUsed._sum.usedToday || 0,
-      totalLogs,
-      systemUptime: process.uptime(),
-      avgResponseTime,
-    },
-    users: {
-      total: totalUsers,
-      new24h: newUsersLast24h,
-      new7d: newUsersLast7d,
-      new30d: newUsersLast30d,
-      active24h: activeUsersLast24h.length,
-      growthRates: {
-        last24h: Math.round(userGrowthRate24h * 100) / 100,
-        last7d: Math.round(userGrowthRate7d * 100) / 100,
-        last30d: Math.round(userGrowthRate30d * 100) / 100,
-      },
-    },
-    subscriptions: {
-      total: totalSubscriptions,
-      active: activeSubscriptions,
-      conversionRate: Math.round(conversionRate * 100) / 100,
-      planDistribution,
-    },
-    credits: {
-      totalUsed: totalCreditsUsed._sum.usedToday || 0,
-      used24h: creditsUsedLast24h,
-      used7d: creditsUsedLast7d,
-    },
-    logs: {
-      total: totalLogs,
-      last24h: logsLast24h,
-      typeDistribution: logTypeDistribution,
-    },
-    offers: {
-      total: totalOffers,
-      active: activeOffers,
-      totalClaims: totalOfferClaims,
-    },
-    announcements: {
-      total: totalAnnouncements,
-      published: publishedAnnouncements,
-    },
-    performance: {
-      avgResponseTime,
-      uptime: process.uptime(),
-      memoryUsage: process.memoryUsage(),
-    },
-    timestamp: new Date().toISOString(),
-  };
 }
