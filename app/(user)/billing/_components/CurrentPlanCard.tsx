@@ -1,3 +1,6 @@
+"use client";
+
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -20,6 +23,8 @@ interface CurrentPlanProps {
 }
 
 export default function CurrentPlanCard({ plan }: CurrentPlanProps) {
+  const router = useRouter();
+
   return (
     <Card className="bg-gradient-card border-border shadow-card">
       <CardHeader>
@@ -45,7 +50,14 @@ export default function CurrentPlanCard({ plan }: CurrentPlanProps) {
                 {plan.price}/{plan.billing}
               </p>
             </div>
-            <Button variant="outline">Change Plan</Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                router.push("/pricing"), { scroll: false };
+              }}
+            >
+              Change Plan
+            </Button>
           </div>
           <Separator />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -20,6 +20,7 @@ model User {
   tgId              String?        @unique @map("tg_id")
   authSessionTgId   String?
   role              UserRole?      @default(USER)
+  status            UserStatus?    @default(ACTIVE)
   AuthSessionByTgId AuthSession?   @relation("AuthSessionUserByTgId")
   AuthSessionById   AuthSession[]  @relation("AuthSessionUserById")
   credit            Credit?
@@ -211,4 +212,10 @@ enum UserRole {
   USER
   ADMIN
   SUPER_ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
 }
